@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { login as apiLogin, register as apiRegister } from "../api/authApi";
 import { getCurrentUser, updateCurrentUser } from "../api/userApi";
-import { getToken, removeToken, saveToken, saveOnboardingSeen, getOnboardingSeen, saveProfileImage, getProfileImage } from "../services/storage";
+import { getToken, removeToken, saveToken, saveRefreshToken, removeRefreshToken, saveOnboardingSeen, getOnboardingSeen, saveProfileImage, getProfileImage } from "../services/storage";
 import { setAuthToken } from "../api/axiosConfig";
 
 export const AuthContext = createContext(null);
@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       if (error.response?.status === 401 || error.response?.status === 403) {
         await removeToken();
+        await removeRefreshToken();
         setToken(null);
         setAuthToken(null);
       }
@@ -62,6 +63,7 @@ export const AuthProvider = ({ children }) => {
       const response = await apiLogin({ email, password });
       const data = response.data || {};
       const access = data.access || data.token || data.access_token;
+      const refresh = data.refresh || data.refresh_token;
       if (!access) {
         throw new Error("Unable to read access token from login response.");
       }
@@ -69,6 +71,9 @@ export const AuthProvider = ({ children }) => {
       setToken(access);
       setAuthToken(access);
       await saveToken(access);
+      if (refresh) {
+        await saveRefreshToken(refresh);
+      }
       await fetchCurrentUser();
 
       const seenOnboarding = await getOnboardingSeen();
@@ -89,10 +94,14 @@ export const AuthProvider = ({ children }) => {
       const response = await apiRegister(payload);
       const data = response.data || {};
       const access = data.access || data.token || data.access_token;
+      const refresh = data.refresh || data.refresh_token;
       if (access) {
         setToken(access);
         setAuthToken(access);
         await saveToken(access);
+        if (refresh) {
+          await saveRefreshToken(refresh);
+        }
         await fetchCurrentUser();
       } else {
         await login({ email: payload.email, password: payload.password });
@@ -107,7 +116,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUserProfile = async (data) => {
     try {
-      const config = data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined;
+      const config = data instanceof FormData ? { headers: {} } : undefined;
       const response = await updateCurrentUser(data, config);
       const updatedUser = response.data || {};
       const userId = updatedUser.id || updatedUser.user_id || updatedUser.email;
@@ -125,6 +134,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     await removeToken();
+    await removeRefreshToken();
     setToken(null);
     setUser(null);
     setAuthToken(null);

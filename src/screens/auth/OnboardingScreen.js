@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import useAuth from "../../hooks/useAuth";
@@ -24,9 +24,14 @@ const slides = [
   },
 ];
 
+const finalSlide = {
+  icon: "arrow-forward-circle-outline",
+  title: "Ready to continue",
+  description: "Swipe once more to login and begin your search.",
+};
+
 export default function OnboardingScreen({ navigation }) {
   const [index, setIndex] = useState(0);
-  const scrollRef = useRef(null);
   const { token, markOnboardingSeen } = useAuth();
   const finishRoute = token ? "Main" : "Auth";
 
@@ -45,10 +50,22 @@ export default function OnboardingScreen({ navigation }) {
     // Let the context change trigger AppNavigator re-render
   };
 
-  const handleMomentumScrollEnd = (event) => {
+  const handleMomentumScrollEnd = async (event) => {
     const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+
+    if (newIndex >= slides.length) {
+      await markOnboardingSeen();
+      if (finishRoute === "Auth") {
+        navigation.replace("Auth", { screen: "Login" });
+        return;
+      }
+      return;
+    }
+
     setIndex(newIndex);
   };
+
+  const displayIndex = Math.min(index, slides.length - 1);
 
   return (
     <View style={styles.container}>
@@ -58,14 +75,13 @@ export default function OnboardingScreen({ navigation }) {
         </TouchableOpacity>
       </View>
       <ScrollView
-        ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleMomentumScrollEnd}
         contentContainerStyle={styles.scrollContainer}
       >
-        {slides.map((slideItem, idx) => (
+        {[...slides, finalSlide].map((slideItem, idx) => (
           <View key={idx} style={styles.slide}>
             <View style={styles.card}>
               <View style={styles.iconBox}>
@@ -79,7 +95,7 @@ export default function OnboardingScreen({ navigation }) {
       </ScrollView>
       <View style={styles.pagination}>
         {slides.map((_, idx) => (
-          <View key={idx} style={[styles.dot, idx === index && styles.activeDot]} />
+          <View key={idx} style={[styles.dot, idx === displayIndex && styles.activeDot]} />
         ))}
       </View>
     </View>
@@ -162,18 +178,6 @@ function createStyles(colors) {
     },
     activeDot: {
       backgroundColor: colors.primary,
-    },
-    button: {
-      backgroundColor: colors.primary,
-      borderRadius: 16,
-      paddingVertical: 18,
-      alignItems: "center",
-      marginBottom: 12,
-    },
-    buttonText: {
-      color: "#fff",
-      fontSize: 16,
-      fontWeight: "900",
     },
   });
 }

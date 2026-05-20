@@ -21,7 +21,11 @@ export default function ProfileScreen({ navigation }) {
   }, [user?.profile_image]);
 
   const handleListingsPress = () => {
-    navigation.getParent()?.navigate("Post");
+    navigation.navigate("MyListings");
+  };
+
+  const handleBookingsPress = () => {
+    navigation.navigate("MyBookings");
   };
 
   const pickImage = async (useCamera = false) => {
@@ -142,6 +146,17 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.optionText}>
             <Text style={styles.optionTitle}>My Listings</Text>
             <Text style={styles.optionSubtitle}>Manage your properties</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.optionItem} onPress={handleBookingsPress}>
+          <View style={[styles.optionIcon, { backgroundColor: "rgba(52,199,89,0.12)" }]}> 
+            <Ionicons name="calendar-outline" size={22} color="#34c759" />
+          </View>
+          <View style={styles.optionText}>
+            <Text style={styles.optionTitle}>My Bookings</Text>
+            <Text style={styles.optionSubtitle}>View your rented properties</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>

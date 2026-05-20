@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ export default function HomeScreen({ navigation }) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const lastTapRef = useRef(0);
 
   const loadProperties = async () => {
     try {
@@ -56,12 +57,26 @@ export default function HomeScreen({ navigation }) {
     loadProperties();
   };
 
+  const makeString = (value) => {
+    if (value == null) return "";
+    if (typeof value === "string" || typeof value === "number") return String(value);
+    if (typeof value === "object") return value.name || value.slug || value.description || "";
+    return "";
+  };
+
+  const makeImageUri = (image) => {
+    if (!image) return "";
+    if (typeof image === "string") return image;
+    if (typeof image === "object") return image.uri || image.url || image.path || "";
+    return String(image);
+  };
+
   const filteredProperties = useMemo(() => {
     const lowerQuery = searchQuery.toLowerCase();
     return properties.filter((item) => {
-      const title = (item.title || item.name || "").toLowerCase();
-      const location = (item.location || item.city || "").toLowerCase();
-      const type = (item.property_type || item.type || item.listing_type || "").toLowerCase();
+      const title = makeString(item.title || item.name).toLowerCase();
+      const location = makeString(item.location || item.city).toLowerCase();
+      const type = makeString(item.property_type || item.type || item.listing_type).toLowerCase();
       const matchesSearch = title.includes(lowerQuery) || location.includes(lowerQuery);
       const matchesCategory = selectedCategory === "All" || type.includes(selectedCategory.toLowerCase());
       return matchesSearch && matchesCategory;
@@ -85,16 +100,41 @@ export default function HomeScreen({ navigation }) {
     const scale = new Animated.Value(1);
     const onPressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
     const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-    const imageUrl = item.image || item.cover_image || item.images?.[0] || "https://via.placeholder.com/540x360?text=Property";
+    const imageUrl =
+      makeImageUri(item.image) ||
+      makeImageUri(item.cover_image) ||
+      makeImageUri(item.images?.[0]) ||
+      "https://via.placeholder.com/540x360?text=Property";
     const isVerified = item.is_verified || item.verified || false;
     const priceValue = item.price ? `${item.price.toLocaleString()} ETB / month` : "Price unavailable";
-    const badgeLabel = item.property_type || item.type || item.listing_type || "";
-    const locationText = item.location || item.city || item.address || "";
-    const titleText = item.title || item.name || "";
+    const badgeLabel = makeString(item.property_type || item.type || item.listing_type);
+    const locationText = makeString(item.location || item.city || item.address);
+    const titleText = makeString(item.title || item.name);
+
+    const handleCardPress = () => {
+      const now = Date.now();
+      const isDoubleTap = now - lastTapRef.current <= 300;
+      lastTapRef.current = now;
+      if (isDoubleTap) {
+        const slugValue = item.slug;
+        const id = item.id;
+        const routeImage = imageUrl;
+        const routeTitle = titleText;
+        const routePricePerDay = item.price_per_day || item.price || null;
+        console.log("NAVIGATE PROPERTY DETAIL", { slug: slugValue, id });
+        navigation.navigate("PropertyDetailScreen", {
+          slug: slugValue,
+          id,
+          image: routeImage,
+          title: routeTitle,
+          pricePerDay: routePricePerDay,
+        });
+      }
+    };
 
     return (
       <Pressable
-        onPress={() => navigation.navigate("PropertyDetail", { id: item.id })}
+        onPress={handleCardPress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}

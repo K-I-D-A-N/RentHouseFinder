@@ -339,7 +339,7 @@ const createStyles = (colors) => StyleSheet.create({
   },
   submitButton: {
     marginTop: 10,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",

@@ -11,6 +11,10 @@ import FavoritesScreen from "../screens/home/FavoritesScreen";
 import ProfileScreen from "../screens/profile/ProfileScreen";
 import PropertyDetailScreen from "../screens/home/PropertyDetailScreen";
 import SettingsScreen from "../screens/profile/SettingsScreen";
+import MyListingsScreen from "../screens/property/MyListingsScreen";
+import EditPropertyScreen from "../screens/property/EditPropertyScreen";
+import MyBookingsScreen from "../screens/booking/MyBookingsScreen";
+import BookingScreen from "../screens/booking/BookingScreen";
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -20,7 +24,8 @@ function HomeStackNavigator() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="Home" component={HomeScreen} />
-      <HomeStack.Screen name="PropertyDetail" component={PropertyDetailScreen} />
+      <HomeStack.Screen name="PropertyDetailScreen" component={PropertyDetailScreen} />
+      <HomeStack.Screen name="BookingScreen" component={BookingScreen} />
     </HomeStack.Navigator>
   );
 }
@@ -30,6 +35,10 @@ function ProfileStackNavigator() {
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+      <ProfileStack.Screen name="MyListings" component={MyListingsScreen} />
+      <ProfileStack.Screen name="MyBookings" component={MyBookingsScreen} />
+      <ProfileStack.Screen name="PropertyDetailScreen" component={PropertyDetailScreen} />
+      <ProfileStack.Screen name="EditProperty" component={EditPropertyScreen} />
     </ProfileStack.Navigator>
   );
 }
@@ -38,10 +47,10 @@ export default function BottomTabs() {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
-  function CustomTabBarButton({ children, onPress }) {
+  function CustomTabBarButton({ children, onPress, style }) {
     return (
       <TouchableOpacity
-        style={styles.customButtonContainer}
+        style={[styles.customButtonContainer, style]}
         onPress={onPress}
         activeOpacity={0.8}
       >

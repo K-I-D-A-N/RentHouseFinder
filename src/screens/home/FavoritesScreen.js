@@ -46,8 +46,19 @@ export default function FavoritesScreen({ navigation }) {
     loadFavorites();
   }, []);
 
+  const makeImageUri = (image) => {
+    if (!image) return "";
+    if (typeof image === "string") return image;
+    if (typeof image === "object") return image.uri || image.url || image.path || "";
+    return String(image);
+  };
+
   const renderItem = ({ item }) => {
-    const imageUrl = item.image || item.cover_image || item.images?.[0] || "https://via.placeholder.com/900x600?text=Property";
+    const imageUrl =
+      makeImageUri(item.image) ||
+      makeImageUri(item.cover_image) ||
+      makeImageUri(item.images?.[0]) ||
+      "https://via.placeholder.com/900x600?text=Property";
     const price = item.price || item.rent || 0;
     const location = item.location || item.city || item.address || "Unknown location";
     const bedrooms = item.bedrooms || item.bedroom_count || item.beds || 0;
@@ -55,7 +66,10 @@ export default function FavoritesScreen({ navigation }) {
     const area = item.area || item.size || item.square_meters || 0;
 
     return (
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("PropertyDetail", { id: item.id || item._id })}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id || item._id, slug: item.slug } })}
+      >
         <Image source={{ uri: imageUrl }} style={styles.image} />
         <View style={styles.cardBody}>
           <View style={styles.cardHeader}>

@@ -1,279 +1,354 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, TextInput } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Image,
+  TextInput,
+} from "react-native";
+import useTheme from "../../hooks/useTheme";
 import { createBooking } from "../../api/bookingApi";
 import { getPropertyById } from "../../api/propertyApi";
 
+const formatDate = (date) => {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const makeImageUri = (image) => {
+  if (!image) return "";
+  if (typeof image === "string") return image;
+  if (typeof image === "object") return image.uri || image.url || image.path || "";
+  return String(image);
+};
+
+const parseInputDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 export default function BookingScreen({ route, navigation }) {
-  const { propertyId } = route.params || {};
+  const { colors } = useTheme();
+  const { listingId, pricePerDay: routePricePerDay, title: routeTitle, image: routeImage } = route.params || {};
+
   const [property, setProperty] = useState(null);
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [guests, setGuests] = useState("1");
-  const [loading, setLoading] = useState(true);
-  const [bookingLoading, setBookingLoading] = useState(false);
+  const [propertyLoading, setPropertyLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [startInput, setStartInput] = useState("");
+  const [endInput, setEndInput] = useState("");
+  const [totalDays, setTotalDays] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [dateError, setDateError] = useState("");
 
   useEffect(() => {
+    if (!listingId) return;
+
     const loadProperty = async () => {
+      setPropertyLoading(true);
       try {
-        const response = await getPropertyById(propertyId);
+        const response = await getPropertyById(listingId);
         setProperty(response.data);
       } catch (error) {
-        console.error("Failed to load property", error);
-        Alert.alert("Error", "Failed to load property details.");
+        console.warn("BookingScreen property fetch failed", error.response?.data || error.message || error);
       } finally {
-        setLoading(false);
+        setPropertyLoading(false);
       }
     };
-    if (propertyId) {
-      loadProperty();
-    } else {
-      setLoading(false);
-    }
-  }, [propertyId]);
 
-  const calculateTotal = () => {
-    if (!property || !checkIn || !checkOut) return 0;
-    const days = Math.max(1, Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)));
-    return (property.price || 0) * days;
+    loadProperty();
+  }, [listingId]);
+
+  const effectivePricePerDay = Number(routePricePerDay ?? property?.price_per_day ?? property?.price ?? 0);
+  const effectiveTitle = routeTitle || property?.title || property?.name || "Property";
+
+  useEffect(() => {
+    if (!startDate || !endDate) {
+      setTotalDays(0);
+      setTotalPrice(0);
+      setDateError("");
+      return;
+    }
+
+    const diff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff <= 0) {
+      setTotalDays(0);
+      setTotalPrice(0);
+      setDateError("End date must be after start date");
+      return;
+    }
+
+    setDateError("");
+    setTotalDays(diff);
+    setTotalPrice(diff * effectivePricePerDay);
+  }, [startDate, endDate, effectivePricePerDay]);
+
+  const imageUri =
+    makeImageUri(routeImage) ||
+    makeImageUri(property?.images?.[0]) ||
+    makeImageUri(property?.image) ||
+    makeImageUri(property?.cover_image) ||
+    "https://via.placeholder.com/400x250?text=Property";
+
+  const setStartDateFromString = (value) => {
+    setStartInput(value);
+    setStartDate(parseInputDate(value));
   };
+
+  const setEndDateFromString = (value) => {
+    setEndInput(value);
+    setEndDate(parseInputDate(value));
+  };
+
+  const startDateString = startDate ? formatDate(startDate) : startInput;
+  const endDateString = endDate ? formatDate(endDate) : endInput;
+  const startInputError = startInput && !startDate ? "Date must be YYYY-MM-DD" : "";
+  const endInputError = endInput && !endDate ? "Date must be YYYY-MM-DD" : "";
+
+  const canSubmit = Boolean(listingId && startDate && endDate && totalDays > 0 && !loading && !dateError);
 
   const handleBooking = async () => {
-    if (!checkIn || !checkOut) {
-      Alert.alert("Validation", "Please select check-in and check-out dates.");
+    if (!listingId) {
+      Alert.alert("Error", "Listing ID is missing. Please select a property again.");
       return;
     }
-    if (new Date(checkIn) >= new Date(checkOut)) {
-      Alert.alert("Validation", "Check-out date must be after check-in date.");
+
+    if (!startDate || !endDate || totalDays <= 0) {
+      Alert.alert("Validation", "Please choose valid booking dates.");
       return;
     }
-    setBookingLoading(true);
+
+    setLoading(true);
     try {
       await createBooking({
-        property: propertyId,
-        check_in: checkIn,
-        check_out: checkOut,
-        guests: parseInt(guests),
+        listing_id: listingId,
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+        note: "",
       });
-      Alert.alert("Success", "Booking confirmed!", [
-        { text: "OK", onPress: () => navigation.navigate("MyBookings") },
+      Alert.alert("Success", "Your booking is pending approval", [
+        { text: "OK", onPress: () => navigation.navigate("Profile", { screen: "MyBookings" }) },
       ]);
     } catch (error) {
-      console.error("Booking failed", error);
-      Alert.alert("Error", "Failed to create booking. Please try again.");
+      console.error("Booking failed", error.response?.data || error.message || error);
+      const message = error.response?.data?.detail || error.message || "Failed to create booking. Please try again.";
+      Alert.alert("Error", typeof message === "string" ? message : "Failed to create booking. Please try again.");
     } finally {
-      setBookingLoading(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
+  if (!listingId) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.centered, { backgroundColor: colors.background }]}> 
+        <Text style={[styles.emptyText, { color: colors.text }]}>Invalid booking request. Please select a property from the list.</Text>
       </View>
     );
   }
-
-  if (!property) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>Property not found.</Text>
-      </View>
-    );
-  }
-
-  const total = calculateTotal();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.propertyCard}>
-        <Text style={styles.propertyTitle}>{property.title}</Text>
-        <Text style={styles.propertyLocation}>{property.location}</Text>
-        <Text style={styles.propertyPrice}>${property.price}/night</Text>
-      </View>
+    <View style={[styles.outerContainer, { backgroundColor: colors.background }]}> 
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.heading, { color: colors.text }]}>Confirm booking</Text>
 
-      <View style={styles.formSection}>
-        <Text style={styles.sectionTitle}>Booking Details</Text>
-
-        <View style={styles.inputContainer}>
-          <Icon name="date-range" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Check-in Date (YYYY-MM-DD)"
-            value={checkIn}
-            onChangeText={setCheckIn}
-          />
+        <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+          <Image source={{ uri: imageUri }} style={styles.summaryImage} resizeMode="cover" />
+          <View style={styles.summaryDetails}>
+            <Text style={[styles.summaryTitle, { color: colors.text }]} numberOfLines={2}>{effectiveTitle}</Text>
+            <Text style={[styles.summaryPrice, { color: colors.primary }]}>{`ETB ${Number(effectivePricePerDay || 0).toLocaleString()} / day`}</Text>
+            {propertyLoading && (
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading listing details…</Text>
+            )}
+          </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Icon name="date-range" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Check-out Date (YYYY-MM-DD)"
-            value={checkOut}
-            onChangeText={setCheckOut}
-          />
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Booking dates</Text>
+
+          <View style={[styles.dateInput, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}> 
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Start Date</Text>
+            <TextInput
+              style={[styles.input, { color: colors.text }]}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.placeholder}
+              value={startInput}
+              onChangeText={setStartDateFromString}
+              keyboardType="numbers-and-punctuation"
+            />
+            {startInputError ? <Text style={styles.validationError}>{startInputError}</Text> : null}
+          </View>
+
+          <View style={[styles.dateInput, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}> 
+            <Text style={[styles.inputLabel, { color: colors.text }]}>End Date</Text>
+            <TextInput
+              style={[styles.input, { color: colors.text }]}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.placeholder}
+              value={endInput}
+              onChangeText={setEndDateFromString}
+              keyboardType="numbers-and-punctuation"
+            />
+            {endInputError ? <Text style={styles.validationError}>{endInputError}</Text> : null}
+          </View>
+
+          {dateError ? <Text style={styles.validationError}>{dateError}</Text> : null}
         </View>
 
-        <View style={styles.inputContainer}>
-          <Icon name="group" size={20} color="#666" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Number of Guests"
-            keyboardType="numeric"
-            value={guests}
-            onChangeText={setGuests}
-          />
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Price summary</Text>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Total days</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>{totalDays || "-"}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Price per day</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>{`ETB ${Number(effectivePricePerDay || 0).toLocaleString()}`}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Total price</Text>
+            <Text style={[styles.totalAmount, { color: colors.primary }]}>{`ETB ${totalPrice.toLocaleString()}`}</Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.priceSection}>
-        <Text style={styles.sectionTitle}>Price Breakdown</Text>
-        <View style={styles.priceRow}>
-          <Text style={styles.priceLabel}>${property.price} x {Math.max(1, Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)))} nights</Text>
-          <Text style={styles.priceValue}>${total}</Text>
-        </View>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>${total}</Text>
-        </View>
-      </View>
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            {
+              backgroundColor: canSubmit ? colors.primaryDark : colors.inputBackground,
+              borderColor: colors.border,
+              borderWidth: 1,
+            },
+          ]}
+          onPress={handleBooking}
+          disabled={!canSubmit}
+        >
+          {loading ? (
+            <ActivityIndicator color={canSubmit ? colors.surface : colors.textSecondary} />
+          ) : (
+            <Text style={[styles.submitText, { color: canSubmit ? colors.surface : colors.textSecondary }]}>Book Now</Text>
+          )}
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.bookButton} onPress={handleBooking} disabled={bookingLoading}>
-        {bookingLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.bookButtonText}>Confirm Booking</Text>}
-      </TouchableOpacity>
-    </ScrollView>
+        <View style={styles.footerSpacing} />
+      </ScrollView>
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   content: {
+    padding: 20,
+    paddingBottom: 140,
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: 20,
+  },
+  summaryCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  summaryImage: {
+    width: "100%",
+    height: 180,
+  },
+  summaryDetails: {
     padding: 16,
   },
-  propertyCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  propertyTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
-  },
-  propertyLocation: {
-    fontSize: 16,
-    color: "#666",
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: "800",
     marginBottom: 8,
   },
-  propertyPrice: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#007bff",
+  summaryPrice: {
+    fontSize: 16,
+    fontWeight: "700",
   },
-  formSection: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  loadingText: {
+    marginTop: 6,
+    fontSize: 14,
+  },
+  section: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 18,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 16,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 12,
-    marginBottom: 12,
-    backgroundColor: "#fafafa",
-  },
-  icon: {
-    marginLeft: 12,
-  },
-  input: {
-    flex: 1,
-    padding: 14,
     fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 14,
   },
-  priceSection: {
-    backgroundColor: "#fff",
+  dateInput: {
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    marginBottom: 14,
   },
-  priceRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "700",
     marginBottom: 8,
   },
-  priceLabel: {
+  dateText: {
     fontSize: 16,
-    color: "#555",
   },
-  priceValue: {
-    fontSize: 16,
-    color: "#333",
-  },
-  totalRow: {
+  detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 8,
+    marginBottom: 12,
   },
-  totalLabel: {
+  detailLabel: {
+    fontSize: 14,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  totalAmount: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "800",
   },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#007bff",
+  validationError: {
+    color: "#d32f2f",
+    marginTop: 8,
+    fontWeight: "700",
   },
-  bookButton: {
-    backgroundColor: "#007bff",
-    padding: 18,
-    borderRadius: 12,
+  footerSpacing: {
+    height: 92,
+  },
+  submitButton: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
-  bookButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
+  submitText: {
+    fontSize: 16,
+    fontWeight: "800",
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  emptyText: {
-    color: "#666",
-    fontSize: 16,
   },
 });

@@ -78,14 +78,25 @@ export default function SearchScreen({ navigation }) {
     return filtered;
   }, [properties, minPrice, maxPrice, location, selectedType, selectedBedrooms]);
 
+  const makeImageUri = (image) => {
+    if (!image) return "";
+    if (typeof image === "string") return image;
+    if (typeof image === "object") return image.uri || image.url || image.path || "";
+    return String(image);
+  };
+
   const renderPropertyCard = ({ item }) => {
-    const imageUrl = item.image || item.cover_image || item.images?.[0] || "https://via.placeholder.com/300x200?text=Property";
+    const imageUrl =
+      makeImageUri(item.image) ||
+      makeImageUri(item.cover_image) ||
+      makeImageUri(item.images?.[0]) ||
+      "https://via.placeholder.com/300x200?text=Property";
     const price = item.price || item.rent || 0;
     const itemLocation = item.location || item.city || item.address || "Unknown";
     const beds = item.bedrooms || item.bedroom_count || item.beds || 0;
 
     return (
-      <TouchableOpacity style={styles.resultCard} onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetail", params: { id: item.id } })}>
+      <TouchableOpacity style={styles.resultCard} onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id, slug: item.slug } })}>
         <Image source={{ uri: imageUrl }} style={styles.resultImage} />
         <View style={styles.resultBody}>
           <Text style={styles.resultPrice}>ETB {price.toLocaleString()}/month</Text>

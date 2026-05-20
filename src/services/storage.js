@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TOKEN_KEY = "auth_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
 const ONBOARDING_KEY = "has_seen_onboarding";
 const PROFILE_IMAGE_KEY_PREFIX = "profile_image_";
 
@@ -14,6 +15,18 @@ export const getToken = async () => {
 
 export const removeToken = async () => {
   await AsyncStorage.removeItem(TOKEN_KEY);
+};
+
+export const saveRefreshToken = async (token) => {
+  await AsyncStorage.setItem(REFRESH_TOKEN_KEY, token);
+};
+
+export const getRefreshToken = async () => {
+  return await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+};
+
+export const removeRefreshToken = async () => {
+  await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
 export const saveOnboardingSeen = async () => {
