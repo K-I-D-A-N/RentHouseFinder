@@ -13,6 +13,8 @@ import {
 import useTheme from "../../hooks/useTheme";
 import { createBooking } from "../../api/bookingApi";
 import { getPropertyById } from "../../api/propertyApi";
+import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import ImageWithFallback from "../../components/ImageWithFallback";
 
 const formatDate = (date) => {
   if (!date) return "";
@@ -92,12 +94,7 @@ export default function BookingScreen({ route, navigation }) {
     setTotalPrice(diff * effectivePricePerDay);
   }, [startDate, endDate, effectivePricePerDay]);
 
-  const imageUri =
-    makeImageUri(routeImage) ||
-    makeImageUri(property?.images?.[0]) ||
-    makeImageUri(property?.image) ||
-    makeImageUri(property?.cover_image) ||
-    "https://via.placeholder.com/400x250?text=Property";
+  const imageUri = getPrimaryImageUrl(property) || makeImageUri(routeImage) || "";
 
   const setStartDateFromString = (value) => {
     setStartInput(value);
@@ -161,7 +158,7 @@ export default function BookingScreen({ route, navigation }) {
         <Text style={[styles.heading, { color: colors.text }]}>Confirm booking</Text>
 
         <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-          <Image source={{ uri: imageUri }} style={styles.summaryImage} resizeMode="cover" />
+          <ImageWithFallback sourceUri={imageUri} style={styles.summaryImage} />
           <View style={styles.summaryDetails}>
             <Text style={[styles.summaryTitle, { color: colors.text }]} numberOfLines={2}>{effectiveTitle}</Text>
             <Text style={[styles.summaryPrice, { color: colors.primary }]}>{`ETB ${Number(effectivePricePerDay || 0).toLocaleString()} / day`}</Text>

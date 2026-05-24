@@ -1,23 +1,80 @@
-import React, { useMemo, useState } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, FlatList } from "react-native";
+import React, { useMemo, useState, useEffect } from "react";
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, FlatList, Modal, KeyboardAvoidingView, SafeAreaView, Platform } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import useTheme from "../../hooks/useTheme";
+import useAuth from "../../hooks/useAuth";
 import { createProperty } from "../../api/propertyApi";
+import { getCategories } from "../../api/categoryApi";
 
 export default function AddPropertyScreen({ navigation }) {
-  const [title, setTitle] = useState("");
   const { colors } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const [price, setPrice] = useState("");
-  const [propertyType, setPropertyType] = useState("");
-  const [location, setLocation] = useState("");
-  const [bedrooms, setBedrooms] = useState("");
-  const [bathrooms, setBathrooms] = useState("");
-  const [area, setArea] = useState("");
+  const { role } = useAuth();
+  
+  // Check if user is landlord - show error if not
+  if (role !== "landlord") {
+    return (
+      <View style={[createStyles(colors).container, { justifyContent: "center", alignItems: "center" }]}>
+        <Ionicons name="lock-closed" size={64} color={colors.textSecondary} />
+        <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text, marginTop: 16, textAlign: "center" }}>
+          Landlord Only
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: "center", paddingHorizontal: 20 }}>
+          Only landlord accounts can create and manage property listings.
+        </Text>
+      </View>
+    );
+  }
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [pricePerDay, setPricePerDay] = useState("");
+  const [pricePerWeek, setPricePerWeek] = useState("");
+  const [pricePerMonth, setPricePerMonth] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [condition, setCondition] = useState("");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedCategoryName, setSelectedCategoryName] = useState("");
+  
+  // Categories and UI state
+  const [categories, setCategories] = useState([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [showConditionModal, setShowConditionModal] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
+  
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  
+  // Use only backend-accepted values for property condition (requested values)
+  const conditionOptions = [
+    { label: "New", value: "new" },
+    { label: "Like New", value: "like_new" },
+    { label: "Good", value: "good" },
+    { label: "Fair", value: "fair" },
+  ];
+  
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await getCategories();
+        setCategories(response.data || []);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        Alert.alert("Error", "Failed to load property categories.");
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const pickImage = async (useCamera = false) => {
     try {
@@ -75,37 +132,112 @@ export default function AddPropertyScreen({ navigation }) {
   };
 
   const handleSubmit = async () => {
-    if (!title || !price || !propertyType || !location) {
-      Alert.alert("Validation", "Please fill in the title, price, location, and property type.");
+    // Validate required fields
+    if (!title.trim()) {
+      Alert.alert("Validation", "Please enter a property title.");
+      return;
+    }
+    if (!description.trim()) {
+      Alert.alert("Validation", "Please enter a property description.");
+      return;
+    }
+    if (!pricePerDay && !pricePerWeek && !pricePerMonth) {
+      Alert.alert("Validation", "Please enter at least one price (daily, weekly, or monthly).");
+      return;
+    }
+    if (!depositAmount) {
+      Alert.alert("Validation", "Please enter a deposit amount.");
+      return;
+    }
+    if (!condition || !conditionOptions.some(opt => opt.value === condition)) {
+      Alert.alert("Validation", "Please select a valid property condition.");
+      return;
+    }
+    if (!city.trim()) {
+      Alert.alert("Validation", "Please enter a city.");
+      return;
+    }
+    if (!address.trim()) {
+      Alert.alert("Validation", "Please enter an address.");
+      return;
+    }
+    if (!selectedCategoryId) {
+      Alert.alert("Validation", "Please select a property category.");
       return;
     }
 
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("title", title);
-      formData.append("price", Number(price));
-      formData.append("property_type", propertyType);
-      formData.append("location", location);
-      formData.append("bedrooms", bedrooms ? Number(bedrooms) : 0);
-      formData.append("bathrooms", bathrooms ? Number(bathrooms) : 0);
-      formData.append("area", area ? Number(area) : 0);
+      
+      // Add all required fields
+      formData.append("title", title.trim());
+      formData.append("description", description.trim());
+      formData.append("price_per_day", pricePerDay ? Number(pricePerDay) : null);
+      formData.append("price_per_week", pricePerWeek ? Number(pricePerWeek) : null);
+      formData.append("price_per_month", pricePerMonth ? Number(pricePerMonth) : null);
+      formData.append("deposit_amount", Number(depositAmount));
+      formData.append("condition", condition);
+      formData.append("city", city.trim());
+      formData.append("address", address.trim());
+      formData.append("category_id", selectedCategoryId);
 
-      images.forEach((image, index) => {
-        formData.append("images", {
-          uri: image.uri,
-          type: "image/jpeg",
-          name: `property_${index}_${Date.now()}.jpg`,
+      // Add images if any
+      if (images.length > 0) {
+        images.forEach((image, index) => {
+          formData.append("images", {
+            uri: image.uri,
+            type: "image/jpeg",
+            name: `property_${index}_${Date.now()}.jpg`,
+          });
         });
-      });
+      }
 
       await createProperty(formData);
-      Alert.alert("Success", "Property posted successfully.");
+      Alert.alert("Success", "Property posted successfully!");
+      
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setPricePerDay("");
+      setPricePerWeek("");
+      setPricePerMonth("");
+      setDepositAmount("");
+      setCondition("");
+      setCity("");
+      setAddress("");
+      setSelectedCategoryId("");
+      setSelectedCategoryName("");
+      setImages([]);
+      
       navigation.goBack();
     } catch (error) {
-      console.error("Failed to post property", error);
-      const message = error.response?.data || error.message || "Unable to post property.";
-      Alert.alert("Submit failed", typeof message === "string" ? message : JSON.stringify(message));
+      console.error("Failed to post property:", error);
+      
+      // Parse error message
+      let errorMessage = "Unable to post property.";
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === "string") {
+          errorMessage = data;
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (typeof data === "object") {
+          // Extract first error from field errors
+          const firstError = Object.values(data)[0];
+          if (Array.isArray(firstError)) {
+            errorMessage = firstError[0];
+          } else {
+            errorMessage = JSON.stringify(data);
+          }
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert("Submission Failed", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -121,7 +253,9 @@ export default function AddPropertyScreen({ navigation }) {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={80}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 140 }]} keyboardShouldPersistTaps="handled">
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color={colors.text} />
@@ -159,73 +293,215 @@ export default function AddPropertyScreen({ navigation }) {
         />
       </View>
 
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Description</Text>
+        <TextInput
+          style={[styles.input, styles.textArea]}
+          placeholder="Describe your property in detail..."
+          placeholderTextColor={colors.placeholder}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+          textAlignVertical="top"
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Category</Text>
+        <TouchableOpacity 
+          style={[styles.input, { paddingVertical: 12, justifyContent: "center" }]}
+          onPress={() => setShowCategoryModal(true)}
+        >
+          <View style={styles.pickerDisplay}>
+            <Text style={[{ color: selectedCategoryId ? colors.text : colors.placeholder }]}>
+              {selectedCategoryName || "Select Category"}
+            </Text>
+            <Icon name="arrow-drop-down" size={20} color={colors.textSecondary} />
+          </View>
+        </TouchableOpacity>
+        <Modal
+          visible={showCategoryModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowCategoryModal(false)}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowCategoryModal(false)}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              {categoriesLoading ? (
+                <ActivityIndicator color={colors.primary} size="large" style={{ paddingVertical: 20 }} />
+              ) : categories.length > 0 ? (
+                categories.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.optionItem,
+                      selectedCategoryId === category.id && styles.optionItemSelected
+                    ]}
+                    onPress={() => {
+                      setSelectedCategoryId(category.id);
+                      setSelectedCategoryName(category.name);
+                      setShowCategoryModal(false);
+                    }}
+                  >
+                    <Icon 
+                      name={selectedCategoryId === category.id ? "radio-button-checked" : "radio-button-unchecked"} 
+                      size={20} 
+                      color={selectedCategoryId === category.id ? colors.primary : colors.textSecondary}
+                    />
+                    <Text style={[styles.optionText, { color: colors.text }]}>
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={{ color: colors.text, textAlign: "center", paddingVertical: 20 }}>
+                  No categories available
+                </Text>
+              )}
+              <TouchableOpacity 
+                style={[styles.button, { marginTop: 16, backgroundColor: colors.textSecondary }]}
+                onPress={() => setShowCategoryModal(false)}
+              >
+                <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      </View>
+
       <View style={styles.row}>
         <View style={[styles.fieldGroup, styles.halfField]}>
-          <Text style={styles.label}>Price (ETB)</Text>
+          <Text style={styles.label}>Price/Day (ETB)</Text>
           <TextInput
             style={styles.input}
-            placeholder="45000"
+            placeholder="5000"
             placeholderTextColor={colors.placeholder}
             keyboardType="numeric"
-            value={price}
-            onChangeText={setPrice}
+            value={pricePerDay}
+            onChangeText={setPricePerDay}
           />
         </View>
-        <View style={[styles.fieldGroup, styles.halfField]}> 
-          <Text style={styles.label}>Property Type</Text>
+        <View style={[styles.fieldGroup, styles.halfField]}>
+          <Text style={styles.label}>Price/Week (ETB)</Text>
           <TextInput
             style={styles.input}
-            placeholder="Apartment"
+            placeholder="30000"
             placeholderTextColor={colors.placeholder}
-            value={propertyType}
-            onChangeText={setPropertyType}
+            keyboardType="numeric"
+            value={pricePerWeek}
+            onChangeText={setPricePerWeek}
           />
         </View>
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Location</Text>
+        <Text style={styles.label}>Price/Month (ETB)</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g., Bole, Addis Ababa"
+          placeholder="100000"
           placeholderTextColor={colors.placeholder}
-          value={location}
-          onChangeText={setLocation}
+          keyboardType="numeric"
+          value={pricePerMonth}
+          onChangeText={setPricePerMonth}
         />
       </View>
 
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Deposit Amount (ETB)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="50000"
+          placeholderTextColor={colors.placeholder}
+          keyboardType="numeric"
+          value={depositAmount}
+          onChangeText={setDepositAmount}
+        />
+      </View>
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Property Condition</Text>
+        <TouchableOpacity 
+          style={[styles.input, { paddingVertical: 12, justifyContent: "center" }]}
+          onPress={() => setShowConditionModal(true)}
+        >
+          <View style={styles.pickerDisplay}>
+            <Text style={[{ color: condition ? colors.text : colors.placeholder }]}>
+              {condition ? condition.charAt(0).toUpperCase() + condition.slice(1) : "Select Condition"}
+            </Text>
+            <Icon name="arrow-drop-down" size={20} color={colors.textSecondary} />
+          </View>
+        </TouchableOpacity>
+        <Modal
+          visible={showConditionModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowConditionModal(false)}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowConditionModal(false)}
+          >
+            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+              <Text style={styles.modalTitle}>Select Condition</Text>
+              {conditionOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.optionItem,
+                    condition === option.value && styles.optionItemSelected
+                  ]}
+                  onPress={() => {
+                    setCondition(option.value);
+                    setShowConditionModal(false);
+                  }}
+                >
+                  <Icon 
+                    name={condition === option.value ? "radio-button-checked" : "radio-button-unchecked"} 
+                    size={20} 
+                    color={condition === option.value ? colors.primary : colors.textSecondary}
+                  />
+                  <Text style={[styles.optionText, { color: colors.text }]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity 
+                style={[styles.button, { marginTop: 16, backgroundColor: colors.textSecondary }]}
+                onPress={() => setShowConditionModal(false)}
+              >
+                <Text style={styles.buttonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      </View>
+
       <View style={styles.row}>
-        <View style={[styles.fieldGroup, styles.smallField]}>
-          <Text style={styles.label}>Bedrooms</Text>
+        <View style={[styles.fieldGroup, styles.halfField]}>
+          <Text style={styles.label}>City</Text>
           <TextInput
             style={styles.input}
-            placeholder="3"
+            placeholder="Addis Ababa"
             placeholderTextColor={colors.placeholder}
-            keyboardType="numeric"
-            value={bedrooms}
-            onChangeText={setBedrooms}
+            value={city}
+            onChangeText={setCity}
           />
         </View>
-        <View style={[styles.fieldGroup, styles.smallField]}>
-          <Text style={styles.label}>Bathrooms</Text>
+        <View style={[styles.fieldGroup, styles.halfField]}>
+          <Text style={styles.label}>Address</Text>
           <TextInput
             style={styles.input}
-            placeholder="2"
+            placeholder="e.g., Bole, Woliso St."
             placeholderTextColor={colors.placeholder}
-            keyboardType="numeric"
-            value={bathrooms}
-            onChangeText={setBathrooms}
-          />
-        </View>
-        <View style={[styles.fieldGroup, styles.smallField]}>
-          <Text style={styles.label}>Area (m²)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="120"
-            placeholderTextColor={colors.placeholder}
-            keyboardType="numeric"
-            value={area}
-            onChangeText={setArea}
+            value={address}
+            onChangeText={setAddress}
           />
         </View>
       </View>
@@ -233,7 +509,9 @@ export default function AddPropertyScreen({ navigation }) {
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
         {loading ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.submitText}>Post Property</Text>}
       </TouchableOpacity>
-    </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -327,6 +605,17 @@ const createStyles = (colors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.muted,
   },
+  textArea: {
+    height: 120,
+    textAlignVertical: "top",
+    paddingVertical: 12,
+  },
+  pickerDisplay: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 18,
+  },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -349,5 +638,61 @@ const createStyles = (colors) => StyleSheet.create({
     color: colors.surface,
     fontSize: 16,
     fontWeight: "800",
+  },
+  button: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+  },
+  buttonText: {
+    color: colors.surface,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: 20,
+    width: "85%",
+    maxWidth: 450,
+    maxHeight: "80%",
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.text,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  optionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  optionItemSelected: {
+    backgroundColor: "rgba(255, 107, 0, 0.1)",
+    borderColor: colors.primary,
+  },
+  optionText: {
+    fontSize: 16,
+    flex: 1,
+    marginLeft: 12,
   },
 });

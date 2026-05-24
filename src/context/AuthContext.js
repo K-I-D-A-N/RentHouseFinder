@@ -2,7 +2,7 @@ import React, { createContext, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { login as apiLogin, register as apiRegister } from "../api/authApi";
 import { getCurrentUser, updateCurrentUser } from "../api/userApi";
-import { getToken, removeToken, saveToken, saveRefreshToken, removeRefreshToken, saveOnboardingSeen, getOnboardingSeen, saveProfileImage, getProfileImage } from "../services/storage";
+import { getToken, removeToken, saveToken, saveRefreshToken, removeRefreshToken, saveOnboardingSeen, getOnboardingSeen, saveProfileImage, getProfileImage, saveRole, getRole, removeRole } from "../services/storage";
 import { setAuthToken } from "../api/axiosConfig";
 
 export const AuthContext = createContext(null);
@@ -10,6 +10,7 @@ export const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
 
@@ -25,6 +26,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       setUser(userData);
+      
+      // Store user role if available
+      if (userData.role) {
+        await saveRole(userData.role);
+        setRole(userData.role);
+      }
+      
       if (userData.profile_image && userId) {
         await saveProfileImage(userId, userData.profile_image);
       }
@@ -45,7 +53,10 @@ export const AuthProvider = ({ children }) => {
     const restoreAuth = async () => {
       const storedToken = await getToken();
       const storedOnboarding = await getOnboardingSeen();
+      const storedRole = await getRole();
+      
       setHasSeenOnboarding(Boolean(storedOnboarding));
+      setRole(storedRole);
 
       if (storedToken) {
         setToken(storedToken);
@@ -95,6 +106,14 @@ export const AuthProvider = ({ children }) => {
       const data = response.data || {};
       const access = data.access || data.token || data.access_token;
       const refresh = data.refresh || data.refresh_token;
+      
+      // Store role from payload or response
+      const roleToStore = payload.role || data.role;
+      if (roleToStore) {
+        await saveRole(roleToStore);
+        setRole(roleToStore);
+      }
+      
       if (access) {
         setToken(access);
         setAuthToken(access);
@@ -135,8 +154,10 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await removeToken();
     await removeRefreshToken();
+    await removeRole();
     setToken(null);
     setUser(null);
+    setRole(null);
     setAuthToken(null);
   };
 
@@ -152,8 +173,8 @@ export const AuthProvider = ({ children }) => {
   const isLoggedIn = !!token;
 
   const value = useMemo(
-    () => ({ token, isLoggedIn, user, initializing: isLoading, login, logout, register, updateUserProfile, hasSeenOnboarding, markOnboardingSeen }),
-    [token, user, isLoading, hasSeenOnboarding]
+    () => ({ token, isLoggedIn, user, role, initializing: isLoading, login, logout, register, updateUserProfile, hasSeenOnboarding, markOnboardingSeen }),
+    [token, user, role, isLoading, hasSeenOnboarding]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

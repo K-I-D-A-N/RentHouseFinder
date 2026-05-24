@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,11 +13,15 @@ import {
   Pressable,
   Animated,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
+import { getCategories } from "../../api/categoryApi";
+import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import ImageWithFallback from "../../components/ImageWithFallback";
 
-const categories = ["All", "Apartment", "House", "Villa"];
+const defaultCategories = [{ name: "All", slug: "All" }];
 
 export default function HomeScreen({ navigation }) {
   const [properties, setProperties] = useState([]);
@@ -25,13 +29,18 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [categories, setCategories] = useState(defaultCategories);
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const lastTapRef = useRef(0);
 
-  const loadProperties = async () => {
+  const loadProperties = useCallback(async (params = {}) => {
     try {
-      const response = await getProperties();
+      setLoading(true);
+      setProperties([]);
+      console.log("Selected category:", selectedCategory);
+      const response = await getProperties(params);
+      console.log("Fetched listings:", response.data);
       const data = response.data;
       const items = Array.isArray(data)
         ? data
@@ -46,11 +55,58 @@ export default function HomeScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [selectedCategory]);
+
+  // live backend filtering for HomeScreen search
+  const debounceRef = React.useRef(null);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const params = {};
+        if (searchQuery?.trim()) params.search = searchQuery.trim();
+        if (selectedCategory && selectedCategory !== "All") params.category = selectedCategory;
+        await loadProperties(params);
+      } catch (err) {
+        console.error("Live search failed", err);
+      }
+    }, 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery, loadProperties]);
+
+  useEffect(() => {
+    const params = {};
+    if (searchQuery?.trim()) params.search = searchQuery.trim();
+    if (selectedCategory && selectedCategory !== "All") params.category = selectedCategory;
+    setProperties([]);
+    loadProperties(params);
+  }, [selectedCategory, loadProperties]);
 
   useEffect(() => {
     loadProperties();
-  }, []);
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories();
+        const data = Array.isArray(response.data) ? response.data : [];
+        setCategories([{ name: "All", slug: "All" }, ...data.map((category) => ({
+          name: category.name || category.title || "Unknown",
+          slug: category.slug || String(category.name || category.title || "").toLowerCase().replace(/\s+/g, "-"),
+        }))]);
+      } catch (err) {
+        console.warn("Failed to load home categories", err);
+      }
+    };
+    fetchCategories();
+  }, [loadProperties]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const params = {};
+      if (searchQuery?.trim()) params.search = searchQuery.trim();
+      if (selectedCategory && selectedCategory !== "All") params.category = selectedCategory;
+      loadProperties(params);
+    }, [loadProperties, searchQuery, selectedCategory])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -64,34 +120,32 @@ export default function HomeScreen({ navigation }) {
     return "";
   };
 
+  // Improved image extraction: handle arrays of objects or URLs
   const makeImageUri = (image) => {
     if (!image) return "";
     if (typeof image === "string") return image;
+    if (Array.isArray(image) && image.length > 0) {
+      // Try url, image, uri, or string
+      return image[0]?.url || image[0]?.image || image[0]?.uri || (typeof image[0] === "string" ? image[0] : "");
+    }
     if (typeof image === "object") return image.uri || image.url || image.path || "";
     return String(image);
   };
 
-  const filteredProperties = useMemo(() => {
-    const lowerQuery = searchQuery.toLowerCase();
-    return properties.filter((item) => {
-      const title = makeString(item.title || item.name).toLowerCase();
-      const location = makeString(item.location || item.city).toLowerCase();
-      const type = makeString(item.property_type || item.type || item.listing_type).toLowerCase();
-      const matchesSearch = title.includes(lowerQuery) || location.includes(lowerQuery);
-      const matchesCategory = selectedCategory === "All" || type.includes(selectedCategory.toLowerCase());
-      return matchesSearch && matchesCategory;
-    });
-  }, [properties, searchQuery, selectedCategory]);
+  const filteredProperties = useMemo(() => properties, [properties]);
 
   const renderCategory = (category) => {
-    const isActive = selectedCategory === category;
+    const isActive = selectedCategory === category.slug;
     return (
       <TouchableOpacity
-        key={category}
+        key={category.slug}
         style={[styles.categoryPill, isActive && styles.categoryPillActive]}
-        onPress={() => setSelectedCategory(category)}
+        onPress={() => {
+          console.log("Selected category:", category);
+          setSelectedCategory(category.slug);
+        }}
       >
-        <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>{category}</Text>
+        <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>{category.name}</Text>
       </TouchableOpacity>
     );
   };
@@ -100,13 +154,13 @@ export default function HomeScreen({ navigation }) {
     const scale = new Animated.Value(1);
     const onPressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
     const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-    const imageUrl =
-      makeImageUri(item.image) ||
-      makeImageUri(item.cover_image) ||
-      makeImageUri(item.images?.[0]) ||
-      "https://via.placeholder.com/540x360?text=Property";
+    const imageUrl = getPrimaryImageUrl(item) || "";
     const isVerified = item.is_verified || item.verified || false;
-    const priceValue = item.price ? `${item.price.toLocaleString()} ETB / month` : "Price unavailable";
+    // Show price: prefer per month, then week, then day
+    let priceValue = "Price unavailable";
+    if (item.price_per_month) priceValue = `${item.price_per_month.toLocaleString()} ETB / month`;
+    else if (item.price_per_week) priceValue = `${item.price_per_week.toLocaleString()} ETB / week`;
+    else if (item.price_per_day) priceValue = `${item.price_per_day.toLocaleString()} ETB / day`;
     const badgeLabel = makeString(item.property_type || item.type || item.listing_type);
     const locationText = makeString(item.location || item.city || item.address);
     const titleText = makeString(item.title || item.name);
@@ -139,7 +193,7 @@ export default function HomeScreen({ navigation }) {
         onPressOut={onPressOut}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >
-        <Image source={{ uri: imageUrl }} style={styles.propertyImage} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.propertyImage} />
         <View style={styles.badgeRow}>
           {isVerified && (
             <View style={styles.verifiedBadge}>
@@ -201,7 +255,13 @@ export default function HomeScreen({ navigation }) {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        ListEmptyComponent={<Text style={styles.emptyText}>No properties found.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            {selectedCategory !== "All"
+              ? "No listings found for this category."
+              : "No properties found."}
+          </Text>
+        }
       />
     </View>
   );

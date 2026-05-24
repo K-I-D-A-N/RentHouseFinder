@@ -7,7 +7,7 @@ import useTheme from "../../hooks/useTheme";
 import { saveProfileImage } from "../../services/storage";
 
 export default function ProfileScreen({ navigation }) {
-  const { user, logout, updateUserProfile } = useAuth();
+  const { user, role, logout, updateUserProfile } = useAuth();
   const { colors } = useTheme();
   const [uploading, setUploading] = useState(false);
   const [profileImage, setProfileImage] = useState(user?.profile_image || null);
@@ -15,6 +15,8 @@ export default function ProfileScreen({ navigation }) {
   const email = user?.email || "No email available";
   const phone = user?.phone || user?.mobile || "No phone available";
   const initial = name?.charAt(0)?.toUpperCase() || "?";
+  const roleKey = role?.toLowerCase();
+  const isLandlord = roleKey === "landlord";
 
   useEffect(() => {
     setProfileImage(user?.profile_image || null);
@@ -139,27 +141,31 @@ export default function ProfileScreen({ navigation }) {
       </TouchableOpacity>
 
       <View style={styles.optionsCard}>
-        <TouchableOpacity style={styles.optionItem} onPress={handleListingsPress}>
-          <View style={[styles.optionIcon, { backgroundColor: "rgba(255,107,0,0.12)" }]}> 
-            <Ionicons name="home-outline" size={22} color={colors.primary} />
-          </View>
-          <View style={styles.optionText}>
-            <Text style={styles.optionTitle}>My Listings</Text>
-            <Text style={styles.optionSubtitle}>Manage your properties</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
+        {isLandlord && (
+          <TouchableOpacity style={styles.optionItem} onPress={handleListingsPress}>
+            <View style={[styles.optionIcon, { backgroundColor: "rgba(255,107,0,0.12)" }]}> 
+              <Ionicons name="home-outline" size={22} color={colors.primary} />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>My Listings</Text>
+              <Text style={styles.optionSubtitle}>Manage your properties</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
 
-        <TouchableOpacity style={styles.optionItem} onPress={handleBookingsPress}>
-          <View style={[styles.optionIcon, { backgroundColor: "rgba(52,199,89,0.12)" }]}> 
-            <Ionicons name="calendar-outline" size={22} color="#34c759" />
-          </View>
-          <View style={styles.optionText}>
-            <Text style={styles.optionTitle}>My Bookings</Text>
-            <Text style={styles.optionSubtitle}>View your rented properties</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
+        {!isLandlord && (
+          <TouchableOpacity style={styles.optionItem} onPress={handleBookingsPress}>
+            <View style={[styles.optionIcon, { backgroundColor: "rgba(52,199,89,0.12)" }]}> 
+              <Ionicons name="calendar-outline" size={22} color="#34c759" />
+            </View>
+            <View style={styles.optionText}>
+              <Text style={styles.optionTitle}>My Bookings</Text>
+              <Text style={styles.optionSubtitle}>View your rented properties</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.optionItem} onPress={() => navigation.navigate("Settings")}>
           <View style={[styles.optionIcon, { backgroundColor: "rgba(58,123,255,0.12)" }]}> 
@@ -184,13 +190,15 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.ctaCard}>
-        <Text style={styles.ctaTitle}>Want to list your property?</Text>
-        <Text style={styles.ctaSubtitle}>Reach thousands of potential buyers and renters</Text>
-        <TouchableOpacity style={styles.ctaButton} onPress={handleListingsPress}>
-          <Text style={styles.ctaButtonText}>Post Property</Text>
-        </TouchableOpacity>
-      </View>
+      {!isLandlord && (
+        <View style={styles.ctaCard}>
+          <Text style={styles.ctaTitle}>Want to list your property?</Text>
+          <Text style={styles.ctaSubtitle}>Reach thousands of potential buyers and renters</Text>
+          <TouchableOpacity style={styles.ctaButton} onPress={handleListingsPress}>
+            <Text style={styles.ctaButtonText}>Post Property</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }

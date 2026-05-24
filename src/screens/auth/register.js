@@ -1,25 +1,36 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import useAuth from "../../hooks/useAuth";
 import useTheme from "../../hooks/useTheme";
 
 export default function RegisterScreen({ navigation }) {
-  const { register } = useAuth();
+  const { register, login } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [showRoleModal, setShowRoleModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  
+  const roleOptions = [
+    { label: "Customer", value: "customer" },
+    { label: "Landlord", value: "landlord" },
+  ];
 
   const handleRegister = async () => {
     if (!fullName || !email || !phone || !password || !confirmPassword) {
       Alert.alert("Validation", "Please fill in all fields.");
+      return;
+    }
+    if (!selectedRole) {
+      Alert.alert("Validation", "Please select a role (Customer or Landlord).");
       return;
     }
     if (password.length < 8) {
@@ -27,14 +38,51 @@ export default function RegisterScreen({ navigation }) {
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Validation", "Passwords do not match.");
+      Alert.alert("Validation", "Passwords do not match");
       return;
     }
     setLoading(true);
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
     try {
-      await register({ full_name: fullName, email, phone, password });
+      const payload = {
+        full_name: fullName,
+        email: trimmedEmail,
+        phone,
+        password: trimmedPassword,
+        password_confirm: confirmPassword.trim(),
+        role: selectedRole,
+      };
+      console.log("REGISTER PAYLOAD:", payload);
+      const registerRes = await register(payload);
+      console.log("REGISTER RESPONSE:", registerRes);
+      // Auto-login after successful registration
+      try {
+        const loginPayload = {
+          email: trimmedEmail,
+          password: trimmedPassword,
+        };
+        const loginRes = await login(loginPayload);
+        console.log("LOGIN RESPONSE:", loginRes);
+        // Navigate to main app screen (adjust as needed)
+        navigation.replace("Home");
+      } catch (loginError) {
+        console.log("LOGIN ERROR:", loginError.response?.data || loginError.message);
+        Alert.alert(
+          "Login Failed",
+          typeof loginError.response?.data === "string"
+            ? loginError.response?.data
+            : JSON.stringify(loginError.response?.data || loginError.message)
+        );
+      }
     } catch (error) {
-      console.error(error);
+      console.log("REGISTER ERROR:", error.response?.data || error.message);
+      Alert.alert(
+        "Registration Failed",
+        typeof error.response?.data === "string"
+          ? error.response?.data
+          : JSON.stringify(error.response?.data || error.message)
+      );
     } finally {
       setLoading(false);
     }
@@ -81,6 +129,61 @@ export default function RegisterScreen({ navigation }) {
               onChangeText={setPhone}
             />
           </View>
+          <TouchableOpacity 
+            style={[styles.inputContainer, { backgroundColor: colors.inputBackground }]}
+            onPress={() => setShowRoleModal(true)}
+          >
+            <Icon name="security" size={20} color={colors.textSecondary} style={styles.icon} />
+            <Text style={[styles.input, { color: selectedRole ? colors.text : colors.placeholder }]}>
+              {selectedRole ? roleOptions.find(r => r.value === selectedRole)?.label : "Select Role"}
+            </Text>
+            <Icon name="arrow-drop-down" size={20} color={colors.textSecondary} style={styles.icon} />
+          </TouchableOpacity>
+          <Modal
+            visible={showRoleModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowRoleModal(false)}
+          >
+            <TouchableOpacity 
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowRoleModal(false)}
+            >
+              <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+                <Text style={styles.modalTitle}>Select Role</Text>
+                {roleOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.roleOption,
+                      selectedRole === option.value && styles.roleOptionSelected
+                    ]}
+                    onPress={() => {
+                      setSelectedRole(option.value);
+                      setShowRoleModal(false);
+                    }}
+                  >
+                    <Icon 
+                      name={selectedRole === option.value ? "radio-button-checked" : "radio-button-unchecked"} 
+                      size={20} 
+                      color={selectedRole === option.value ? colors.primary : colors.textSecondary}
+                      style={styles.radioIcon}
+                    />
+                    <Text style={[styles.roleOptionText, { color: colors.text }]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity 
+                  style={[styles.button, { marginTop: 16, backgroundColor: colors.textSecondary }]}
+                  onPress={() => setShowRoleModal(false)}
+                >
+                  <Text style={styles.buttonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </Modal>
           <View style={styles.inputContainer}>
             <Icon name="lock" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
@@ -204,5 +307,60 @@ const createStyles = (colors) => StyleSheet.create({
     marginLeft: 6,
     color: colors.primary,
     fontWeight: "bold",
+  },
+  roleContainer: {
+    paddingLeft: 0,
+    paddingRight: 0,
+  },
+  picker: {
+    color: colors.text,
+    marginLeft: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: 20,
+    width: "80%",
+    maxWidth: 400,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.text,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  roleOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  roleOptionSelected: {
+    backgroundColor: "rgba(" + parseInt(colors.primary.slice(1, 3), 16) + "," + 
+                      parseInt(colors.primary.slice(3, 5), 16) + "," + 
+                      parseInt(colors.primary.slice(5, 7), 16) + ",0.1)",
+    borderColor: colors.primary,
+  },
+  radioIcon: {
+    marginRight: 12,
+  },
+  roleOptionText: {
+    fontSize: 16,
+    flex: 1,
   },
 });

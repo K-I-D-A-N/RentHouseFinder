@@ -3,6 +3,8 @@ import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndi
 import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
+import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import ImageWithFallback from "../../components/ImageWithFallback";
 
 export default function FavoritesScreen({ navigation }) {
   const [favorites, setFavorites] = useState([]);
@@ -54,11 +56,7 @@ export default function FavoritesScreen({ navigation }) {
   };
 
   const renderItem = ({ item }) => {
-    const imageUrl =
-      makeImageUri(item.image) ||
-      makeImageUri(item.cover_image) ||
-      makeImageUri(item.images?.[0]) ||
-      "https://via.placeholder.com/900x600?text=Property";
+    const imageUrl = getPrimaryImageUrl(item) || "";
     const price = item.price || item.rent || 0;
     const location = item.location || item.city || item.address || "Unknown location";
     const bedrooms = item.bedrooms || item.bedroom_count || item.beds || 0;
@@ -70,7 +68,7 @@ export default function FavoritesScreen({ navigation }) {
         style={styles.card}
         onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id || item._id, slug: item.slug } })}
       >
-        <Image source={{ uri: imageUrl }} style={styles.image} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.image} />
         <View style={styles.cardBody}>
           <View style={styles.cardHeader}>
             <Text style={styles.price}>ETB {price.toLocaleString()}/month</Text>

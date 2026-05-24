@@ -21,11 +21,18 @@ export default function LoginScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await login({ email, password });
-      // Authentication state controls the root navigator.
-      // When login succeeds, AppNavigator will re-render and show Main automatically.
+      const res = await login({ email, password });
+      console.log("LOGIN RESPONSE:", res);
+      // Navigation is handled by auth state, but you can force navigation if needed:
+      // navigation.replace("Home");
     } catch (error) {
-      console.error(error);
+      console.log("LOGIN ERROR:", error.response?.data || error.message);
+      Alert.alert(
+        "Login Failed",
+        typeof error.response?.data === "string"
+          ? error.response?.data
+          : JSON.stringify(error.response?.data || error.message)
+      );
     } finally {
       setLoading(false);
     }

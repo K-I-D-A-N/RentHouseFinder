@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../hooks/useTheme";
+import useAuth from "../hooks/useAuth";
 import HomeScreen from "../screens/home/HomeScreen";
 import SearchScreen from "../screens/home/SearchScreen";
 import AddPropertyScreen from "../screens/property/AddPropertyScreen";
@@ -14,6 +15,7 @@ import SettingsScreen from "../screens/profile/SettingsScreen";
 import MyListingsScreen from "../screens/property/MyListingsScreen";
 import EditPropertyScreen from "../screens/property/EditPropertyScreen";
 import MyBookingsScreen from "../screens/booking/MyBookingsScreen";
+import PaymentScreen from "../screens/booking/PaymentScreen";
 import BookingScreen from "../screens/booking/BookingScreen";
 
 const Tab = createBottomTabNavigator();
@@ -30,6 +32,7 @@ function HomeStackNavigator() {
   );
 }
 
+import EditListingScreen from "../screens/property/EditListingScreen";
 function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
@@ -37,15 +40,19 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
       <ProfileStack.Screen name="MyListings" component={MyListingsScreen} />
       <ProfileStack.Screen name="MyBookings" component={MyBookingsScreen} />
+      <ProfileStack.Screen name="PaymentScreen" component={PaymentScreen} />
       <ProfileStack.Screen name="PropertyDetailScreen" component={PropertyDetailScreen} />
       <ProfileStack.Screen name="EditProperty" component={EditPropertyScreen} />
+      <ProfileStack.Screen name="EditListingScreen" component={EditListingScreen} />
     </ProfileStack.Navigator>
   );
 }
 
 export default function BottomTabs() {
   const { colors } = useTheme();
+  const { role } = useAuth();
   const styles = createStyles(colors);
+  const isLandlord = role === "landlord";
 
   function CustomTabBarButton({ children, onPress, style }) {
     return (
@@ -97,14 +104,16 @@ export default function BottomTabs() {
           ),
         }}
       />
-      <Tab.Screen
-        name="Post"
-        component={AddPropertyScreen}
-        options={{
-          tabBarButton: (props) => <CustomTabBarButton {...props} />,
-          tabBarIcon: () => <Ionicons name="add" size={28} color={colors.surface} />,
-        }}
-      />
+      {isLandlord && (
+        <Tab.Screen
+          name="Post"
+          component={AddPropertyScreen}
+          options={{
+            tabBarButton: (props) => <CustomTabBarButton {...props} />,
+            tabBarIcon: () => <Ionicons name="add" size={28} color={colors.surface} />,
+          }}
+        />
+      )}
       <Tab.Screen
         name="Favorites"
         component={FavoritesScreen}

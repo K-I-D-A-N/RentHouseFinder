@@ -1,4 +1,6 @@
-﻿import api from "./axiosConfig";
+﻿// Fetch only the current user's listings
+export const getMyListings = () => api.get("/listings/my/listings");
+import api from "./axiosConfig";
 
 export const getProperties = (params) => api.get("/listings/", { params });
 export const getPropertyById = (id) => api.get(`/listings/${id}/`);

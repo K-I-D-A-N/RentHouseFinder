@@ -14,8 +14,11 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import useTheme from "../../hooks/useTheme";
+import useAuth from "../../hooks/useAuth";
 import api from "../../api/axiosConfig";
-import { getListingReviews } from "../../api/reviewApi";
+import { getListingReviews, getListingReviewStats } from "../../api/reviewApi";
+import { getPrimaryImageUrl, getOwnerField } from "../../utils/dataHelpers";
+import ImageWithFallback from "../../components/ImageWithFallback";
 
 const { width } = Dimensions.get("window");
 
@@ -35,8 +38,10 @@ const renderStars = (rating) => {
 export default function PropertyDetailScreen({ route, navigation }) {
   const { slug, id, image: routeImage, title: routeTitle, pricePerDay: routePricePerDay } = route.params || {};
   const { colors } = useTheme();
+  const { role } = useAuth();
   const [property, setProperty] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -68,6 +73,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
           reviewPayload?.results ||
           (Array.isArray(reviewPayload) ? reviewPayload : []);
         setReviews(normalizedReviews);
+        try {
+          const statsResponse = await getListingReviewStats(reviewListingId);
+          setReviewStats(statsResponse.data);
+        } catch (sErr) {
+          console.warn("Failed to fetch review stats", sErr.response?.data || sErr.message || sErr);
+          setReviewStats(null);
+        }
       } else {
         console.log("ERROR: listingId is undefined for reviews");
         setReviews([]);
@@ -119,15 +131,9 @@ export default function PropertyDetailScreen({ route, navigation }) {
     return String(image);
   };
 
-  const heroImages =
-    Array.isArray(property.images) && property.images.length > 0
-      ? property.images.map(makeImageUri).filter(Boolean)
-      : [
-          makeImageUri(routeImage) ||
-          makeImageUri(property.image) ||
-          makeImageUri(property.cover_image) ||
-          "https://via.placeholder.com/1080x720?text=No+Image",
-        ];
+  const primary = getPrimaryImageUrl(property) || makeImageUri(routeImage) || makeImageUri(property.image) || makeImageUri(property.cover_image) || "";
+  const extraImages = Array.isArray(property.images) ? property.images.map((i) => i?.image_url || i?.url || i?.image || i?.uri || "").filter(Boolean) : [];
+  const heroImages = primary ? [primary, ...extraImages.filter((u) => u !== primary)] : extraImages.length ? extraImages : ["https://via.placeholder.com/1080x720?text=No+Image"];
 
   const availability =
     property.is_available ?? property.available ??
@@ -143,8 +149,9 @@ export default function PropertyDetailScreen({ route, navigation }) {
 
   const description = property.description || property.summary || property.details || "No description available.";
   const owner = property.owner || property.host || {};
-  const ownerName = makeString(owner.name || property.owner_name || property.host_name || "Host");
-  const ownerPhone = makeString(owner.phone || property.owner_phone || property.host_phone || null);
+  const ownerName = getOwnerField(property, "full_name");
+  const ownerPhone = getOwnerField(property, "phone");
+  const ownerEmail = getOwnerField(property, "email");
   const category = makeString(property.category || property.property_type || property.type) || "General";
   const location = makeString(property.location || property.city || property.address) || "Location unavailable";
   const priceLabel = property.price_per_day
@@ -156,8 +163,11 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const currentListingId = property.id || property.pk || id;
   const bookImage = heroImages[0];
 
+  const isLandlord = role?.toLowerCase() === "landlord";
+  const canBook = availability && !isLandlord;
+
   const handleBookNow = () => {
-    if (!currentListingId) return;
+    if (!currentListingId || !canBook) return;
     const bookingImage = heroImages[0] || routeImage;
     const bookingTitle = property.title || property.name || routeTitle || "Booking";
     const bookingPrice = routePricePerDay || property.price_per_day || property.price || 0;
@@ -182,7 +192,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(_, index) => `hero-${index}`}
         renderItem={({ item }) => (
-          <Image source={{ uri: item }} style={styles.heroImage} resizeMode="cover" />
+          <ImageWithFallback sourceUri={item} style={styles.heroImage} />
         )}
         style={styles.gallery}
       />
@@ -220,24 +230,42 @@ export default function PropertyDetailScreen({ route, navigation }) {
           <Text style={[styles.sectionHeader, { color: colors.text }]}>Owner</Text>
           <View style={styles.ownerRow}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}> 
-              <Text style={styles.avatarText}>{ownerName.charAt(0).toUpperCase()}</Text>
+              <Text style={styles.avatarText}>{ownerName && ownerName !== '-' ? ownerName.charAt(0).toUpperCase() : '-'}</Text>
             </View>
             <View style={styles.ownerDetails}>
               <Text style={[styles.ownerName, { color: colors.text }]}>{ownerName}</Text>
-              <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>{ownerPhone || "Phone unavailable"}</Text>
+              <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>Phone: {ownerPhone}</Text>
+              <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>Email: {ownerEmail}</Text>
             </View>
           </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.surface }]}> 
-          <Text style={[styles.sectionHeader, { color: colors.text }]}>Reviews</Text>
+          <View style={styles.reviewsHeaderRow}>
+            <Text style={[styles.sectionHeader, { color: colors.text }]}>Reviews</Text>
+            {reviewStats ? (
+              <View style={styles.statsRow}>
+                <Text style={[styles.avgText, { color: colors.text }]}>{Number(reviewStats.average || reviewStats.avg || 0).toFixed(1)}</Text>
+                <View style={{ marginLeft: 8 }}>{renderStars(Math.round(reviewStats.average || reviewStats.avg || 0))}</View>
+                <Text style={[styles.countText, { color: colors.textSecondary }]}>{reviewStats.count ?? reviewStats.total ?? reviews.length} reviews</Text>
+              </View>
+            ) : (
+              <Text style={[styles.countText, { color: colors.textSecondary }]}>{reviews.length} reviews</Text>
+            )}
+          </View>
+
           {reviews.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No reviews yet</Text>
           ) : (
             reviews.map((review) => (
               <View key={review.id || review._id || `${review.user}-${Math.random()}`} style={styles.reviewCard}>
                 <View style={styles.reviewHeader}>
-                  <Text style={[styles.reviewName, { color: colors.text }]}>{review.user_name || review.author || review.user || "Guest"}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={[styles.avatar, { backgroundColor: colors.primary, marginRight: 8 }]}> 
+                      <Text style={styles.avatarText}>{(review.user_name || review.author || review.user || "G").charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <Text style={[styles.reviewName, { color: colors.text }]}>{review.user_name || review.author || review.user || "Guest"}</Text>
+                  </View>
                   <View style={styles.ratingRow}>{renderStars(review.rating)}</View>
                 </View>
                 <Text style={[styles.reviewComment, { color: colors.textSecondary }]}>{review.comment || review.body || "No comment provided."}</Text>
@@ -252,12 +280,19 @@ export default function PropertyDetailScreen({ route, navigation }) {
 
       <View style={[styles.footer, { backgroundColor: colors.surface, borderTopColor: colors.border }]}> 
         <TouchableOpacity
-          style={[styles.bookButton, !availability && styles.disabledButton, { backgroundColor: availability ? colors.primary : colors.border }]}
-          disabled={!availability}
+          style={[
+            styles.bookButton,
+            (!canBook || !availability) && styles.disabledButton,
+            { backgroundColor: canBook ? colors.primary : colors.border },
+          ]}
+          disabled={!canBook || !availability}
           onPress={handleBookNow}
         >
           <Text style={[styles.bookButtonText, { color: colors.surface }]}>Book Now</Text>
         </TouchableOpacity>
+        {isLandlord && (
+          <Text style={[styles.disabledNotice, { color: colors.textSecondary }]}>Landlords cannot book properties.</Text>
+        )}
       </View>
     </View>
   );
@@ -384,6 +419,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: "#f9f9f9",
   },
+  reviewsHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  statsRow: { flexDirection: "row", alignItems: "center" },
+  avgText: { fontSize: 20, fontWeight: "800" },
+  countText: { fontSize: 13, marginLeft: 8 },
   reviewHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -430,6 +469,11 @@ const styles = StyleSheet.create({
   bookButtonText: {
     fontSize: 16,
     fontWeight: "800",
+  },
+  disabledNotice: {
+    marginTop: 10,
+    fontSize: 13,
+    textAlign: "center",
   },
   centered: {
     flex: 1,

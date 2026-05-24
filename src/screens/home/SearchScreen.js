@@ -1,18 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, FlatList, Image, ActivityIndicator } from "react-native";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Image, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
+import { getCategories } from "../../api/categoryApi";
+import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import ImageWithFallback from "../../components/ImageWithFallback";
 
-const propertyTypes = ["All Types", "Apartment", "House", "Villa", "Studio"];
-const bedroomOptions = [1, 2, 3, 4, 5];
+const defaultPropertyTypes = [{ name: "All Types", slug: "All Types" }];
 
 export default function SearchScreen({ navigation }) {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [location, setLocation] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
-  const [selectedBedrooms, setSelectedBedrooms] = useState(null);
+  const [propertyTypes, setPropertyTypes] = useState(defaultPropertyTypes);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
   const { colors } = useTheme();
@@ -25,10 +27,21 @@ export default function SearchScreen({ navigation }) {
     return [];
   };
 
-  const loadProperties = async () => {
+  const debounceRef = useRef(null);
+  const lastQueryKey = useRef(null);
+
+  const loadProperties = async (params = {}) => {
     setLoading(true);
     try {
-      const response = await getProperties();
+      const key = JSON.stringify(params || {});
+      if (lastQueryKey.current === key) {
+        setLoading(false);
+        return;
+      }
+      lastQueryKey.current = key;
+      console.log("Selected property type:", selectedType);
+      const response = await getProperties(params);
+      console.log("Fetched search listings:", response.data);
       setProperties(normalizeList(response.data));
     } catch (error) {
       console.error("Failed to load properties", error);
@@ -42,41 +55,50 @@ export default function SearchScreen({ navigation }) {
     loadProperties();
   }, []);
 
-  const filteredProperties = useMemo(() => {
-    let filtered = [...properties];
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const response = await getCategories();
+        const data = Array.isArray(response.data) ? response.data : [];
+        setPropertyTypes([
+          { name: "All Types", slug: "All Types" },
+          ...data.map((category) => ({
+            name: category.name || category.title || "Unknown",
+            slug: category.slug || String(category.name || category.title || "").toLowerCase().replace(/\s+/g, "-"),
+          })),
+        ]);
+      } catch (error) {
+        console.warn("Failed to fetch property types", error);
+      }
+    };
+    fetchTypes();
+  }, []);
 
-    const min = minPrice ? Number(minPrice) : 0;
-    const max = maxPrice ? Number(maxPrice) : Infinity;
-
-    filtered = filtered.filter((item) => {
-      const price = item.price || item.rent || 0;
-      return price >= min && price <= max;
-    });
-
-    if (location.trim()) {
-      const locLower = location.toLowerCase();
-      filtered = filtered.filter((item) => {
-        const itemLocation = (item.location || item.city || item.address || "").toLowerCase();
-        return itemLocation.includes(locLower);
-      });
+  // When filters change, debounce and fetch from backend using supported query params
+  useEffect(() => {
+    const params = {};
+    if (location?.trim()) {
+      params.city = location.trim();
+      // also use as general search keyword for partial matches
+      params.search = location.trim();
     }
+    if (selectedType && selectedType !== "All Types") params.category = selectedType;
+    if (minPrice) params.min_price = minPrice;
+    if (maxPrice) params.max_price = maxPrice;
 
-    if (selectedType !== "All Types") {
-      filtered = filtered.filter((item) => {
-        const type = (item.property_type || item.type || item.listing_type || "").toLowerCase();
-        return type.includes(selectedType.toLowerCase());
-      });
-    }
+    // clear stale results while loading
+    setProperties([]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      loadProperties(params);
+    }, 350);
 
-    if (selectedBedrooms) {
-      filtered = filtered.filter((item) => {
-        const beds = item.bedrooms || item.bedroom_count || item.beds || 0;
-        return beds === selectedBedrooms;
-      });
-    }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [location, selectedType, minPrice, maxPrice]);
 
-    return filtered;
-  }, [properties, minPrice, maxPrice, location, selectedType, selectedBedrooms]);
+  const filteredProperties = useMemo(() => properties, [properties]);
 
   const makeImageUri = (image) => {
     if (!image) return "";
@@ -86,18 +108,14 @@ export default function SearchScreen({ navigation }) {
   };
 
   const renderPropertyCard = ({ item }) => {
-    const imageUrl =
-      makeImageUri(item.image) ||
-      makeImageUri(item.cover_image) ||
-      makeImageUri(item.images?.[0]) ||
-      "https://via.placeholder.com/300x200?text=Property";
+    const imageUrl = getPrimaryImageUrl(item) || "";
     const price = item.price || item.rent || 0;
     const itemLocation = item.location || item.city || item.address || "Unknown";
     const beds = item.bedrooms || item.bedroom_count || item.beds || 0;
 
     return (
       <TouchableOpacity style={styles.resultCard} onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id, slug: item.slug } })}>
-        <Image source={{ uri: imageUrl }} style={styles.resultImage} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.resultImage} />
         <View style={styles.resultBody}>
           <Text style={styles.resultPrice}>ETB {price.toLocaleString()}/month</Text>
           <Text style={styles.resultLocation}>{itemLocation}</Text>
@@ -108,8 +126,8 @@ export default function SearchScreen({ navigation }) {
     );
   };
 
-  return (
-    <View style={styles.container}>
+  const ListHeader = () => (
+    <View>
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.title}>Search & Filter</Text>
@@ -120,7 +138,7 @@ export default function SearchScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.content}>
         <Text style={styles.sectionLabel}>Price Range</Text>
         <View style={styles.priceInputRow}>
           <View style={styles.priceInput}>
@@ -165,51 +183,38 @@ export default function SearchScreen({ navigation }) {
         <View style={styles.typesRow}>
           {propertyTypes.map((type) => (
             <TouchableOpacity
-              key={type}
-              style={[styles.typeButton, selectedType === type && styles.typeButtonActive]}
-              onPress={() => setSelectedType(type)}
+              key={type.slug}
+              style={[styles.typeButton, selectedType === type.slug && styles.typeButtonActive]}
+              onPress={() => setSelectedType(type.slug)}
             >
-              <Text style={[styles.typeText, selectedType === type && styles.typeTextActive]}>{type}</Text>
+              <Text style={[styles.typeText, selectedType === type.slug && styles.typeTextActive]}>{type.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>Number of Bedrooms</Text>
-        <View style={styles.bedroomsRow}>
-          <TouchableOpacity
-            style={[styles.bedroomCard, selectedBedrooms === null && styles.bedroomCardActive]}
-            onPress={() => setSelectedBedrooms(null)}
-          >
-            <Text style={[styles.bedroomText, selectedBedrooms === null && styles.bedroomTextActive]}>Any</Text>
-          </TouchableOpacity>
-          {bedroomOptions.map((bedroom) => (
-            <TouchableOpacity
-              key={bedroom}
-              style={[styles.bedroomCard, selectedBedrooms === bedroom && styles.bedroomCardActive]}
-              onPress={() => setSelectedBedrooms(bedroom)}
-            >
-              <Text style={[styles.bedroomText, selectedBedrooms === bedroom && styles.bedroomTextActive]}>{bedroom}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Bedrooms filter removed per request */}
 
         <Text style={styles.resultsLabel}>{filteredProperties.length} Properties Found</Text>
-      </ScrollView>
+      </View>
+    </View>
+  );
 
-      {loading ? (
+  return (
+    <View style={styles.container}>
+      {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      ) : (
-        <FlatList
-          data={filteredProperties}
-          keyExtractor={(item) => String(item.id || item._id || Math.random())}
-          renderItem={renderPropertyCard}
-          contentContainerStyle={styles.listContent}
-          scrollEnabled={false}
-          ListEmptyComponent={<Text style={styles.emptyText}>No properties match your filters.</Text>}
-        />
       )}
+
+      <FlatList
+        data={filteredProperties}
+        keyExtractor={(item) => String(item.id || item._id || Math.random())}
+        renderItem={renderPropertyCard}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 140 }]}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={<Text style={styles.emptyText}>No properties found matching your filters.</Text>}
+      />
     </View>
   );
 }

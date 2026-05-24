@@ -1,8 +1,10 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, FlatList, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { getMyBookings } from "../../api/bookingApi";
+import { useNavigation } from "@react-navigation/native";
 import useTheme from "../../hooks/useTheme";
+import ReviewModal from "../../components/ReviewModal";
 
 const statusColor = (status, colors) => {
   const normalized = String(status || "").toLowerCase();
@@ -15,8 +17,11 @@ const statusColor = (status, colors) => {
 
 export default function MyBookingsScreen() {
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -55,9 +60,48 @@ export default function MyBookingsScreen() {
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-            <Text style={[styles.propertyName, { color: colors.text }]}>{item.property_title || item.listing_title || item.listing?.title || "Booking"}</Text>
+            <Text style={[styles.propertyName, { color: colors.text }]}> 
+              {item.property_title || item.listing_title || item.listing?.title || item.title || "Property deleted by owner"}
+            </Text>
             <Text style={[styles.propertyDetail, { color: colors.textSecondary }]}>{item.status || "Status unavailable"}</Text>
             <Text style={[styles.propertyDetail, { color: colors.textSecondary }]}>{item.start_date || item.booking_date || item.check_in_date || "Date unavailable"}</Text>
+            {/* Pay Now button for Approved bookings */}
+            {String(item.status).toLowerCase() === "approved" && (item.listing_slug || item.listing?.slug || item.property_slug || item.slug) && (
+              <TouchableOpacity
+                style={{
+                  marginTop: 10,
+                  backgroundColor: colors.primary,
+                  padding: 12,
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+                onPress={async () => {
+                  navigation.navigate("PaymentScreen", { booking: item });
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>Pay Now</Text>
+              </TouchableOpacity>
+            )}
+            {String(item.status).toLowerCase() === "completed" && (
+              <TouchableOpacity
+                style={{
+                  marginTop: 10,
+                  backgroundColor: colors.primary,
+                  padding: 12,
+                  borderRadius: 8,
+                  alignItems: "center",
+                }}
+                onPress={() => {
+                  setSelectedBooking(item);
+                  setReviewModalVisible(true);
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>Write Review</Text>
+              </TouchableOpacity>
+            )}
+            {String(item.status).toLowerCase() === "approved" && !(item.listing_slug || item.listing?.slug || item.property_slug || item.slug) && (
+              <Text style={[styles.propertyDetail, { color: colors.textSecondary, marginTop: 10 }]}>This booking is associated with a removed listing.</Text>
+            )}
           </View>
         )}
         ListEmptyComponent={
@@ -66,10 +110,30 @@ export default function MyBookingsScreen() {
           </View>
         }
         contentContainerStyle={bookings.length ? styles.list : styles.emptyList}
+        // Refresh bookings when returning from PaymentScreen
+        extraData={bookings}
+      />
+      <ReviewModal
+        visible={reviewModalVisible}
+        booking={selectedBooking}
+        onClose={() => {
+          setReviewModalVisible(false);
+          setSelectedBooking(null);
+        }}
+        onSuccess={() => {
+          setReviewModalVisible(false);
+          const listingId = selectedBooking?.listing || selectedBooking?.property || selectedBooking?.listing_id || selectedBooking?.property_id;
+          if (listingId) {
+            navigation.navigate("PropertyDetailScreen", { id: listingId });
+          }
+          // refresh bookings list to reflect any server-side changes
+          fetchBookings();
+        }}
       />
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

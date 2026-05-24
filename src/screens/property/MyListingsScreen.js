@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,37 +15,35 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../../hooks/useTheme";
 import useAuth from "../../hooks/useAuth";
-import { getProperties, deleteProperty } from "../../api/propertyApi";
+import { getMyListings, deleteProperty } from "../../api/propertyApi";
+import { getMyRequests, updateBookingStatus } from "../../api/bookingApi";
+import { useFocusEffect } from "@react-navigation/native";
+import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import ImageWithFallback from "../../components/ImageWithFallback";
 
 export default function MyListingsScreen({ navigation }) {
+  const [activeTab, setActiveTab] = useState("listings"); // "listings" | "requests"
   const [properties, setProperties] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null); // booking id being updated
   const { colors } = useTheme();
   const { user } = useAuth();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const userId = user?.id || user?.user_id;
-
-  const loadUserProperties = async () => {
+  // Listings fetch
+  const loadUserProperties = useCallback(async () => {
     try {
       setLoading(true);
-      // Fetch all properties and filter by user
-      const response = await getProperties();
+      const response = await getMyListings();
       const data = response.data;
       const items = Array.isArray(data)
         ? data
         : Array.isArray(data?.items)
         ? data.items
         : [];
-
-      // Filter properties by current user
-      const userProperties = items.filter((item) => {
-        const itemUserId = item.user_id || item.owner_id || item.user?.id;
-        return itemUserId === userId || item.owner === user?.id;
-      });
-
-      setProperties(userProperties);
+      setProperties(items);
     } catch (error) {
       console.error("Failed to load user properties", error);
       Alert.alert("Error", "Failed to load your listings. Please try again.");
@@ -54,19 +52,54 @@ export default function MyListingsScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
-  useEffect(() => {
-    if (userId) {
-      loadUserProperties();
+  useFocusEffect(
+    useCallback(() => {
+      if (activeTab === "listings") {
+        loadUserProperties();
+      }
+    }, [activeTab, loadUserProperties])
+  );
+
+  // Requests fetch
+  const loadRequests = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getMyRequests();
+      const data = response.data;
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+        ? data.items
+        : [];
+      setRequests(items);
+    } catch (error) {
+      console.error("Failed to load booking requests", error);
+      Alert.alert("Error", "Failed to load booking requests. Please try again.");
+      setRequests([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [userId]);
+  }, []);
+
+  // Tab effect
+  useEffect(() => {
+    if (activeTab === "listings") {
+      loadUserProperties();
+    } else {
+      loadRequests();
+    }
+  }, [activeTab, loadUserProperties, loadRequests]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadUserProperties();
+    if (activeTab === "listings") loadUserProperties();
+    else loadRequests();
   };
 
+  // Delete property
   const handleDeleteProperty = (propertyId, propertyTitle) => {
     Alert.alert(
       "Delete Listing",
@@ -79,8 +112,14 @@ export default function MyListingsScreen({ navigation }) {
           onPress: async () => {
             try {
               await deleteProperty(propertyId);
-              setProperties(properties.filter((p) => p.id !== propertyId));
-              Alert.alert("Success", "Listing deleted successfully.");
+              setProperties((prev) => prev.filter((p) => p.id !== propertyId));
+              Alert.alert("Success", "Property deleted successfully");
+              // Navigate to Home tab to refresh global listings
+              try {
+                navigation.getParent()?.navigate("HomeTab", { screen: "Home" });
+              } catch (navErr) {
+                // ignore navigation errors
+              }
             } catch (error) {
               console.error("Failed to delete property", error);
               Alert.alert("Error", "Failed to delete listing. Please try again.");
@@ -91,14 +130,40 @@ export default function MyListingsScreen({ navigation }) {
     );
   };
 
+  // Approve/Reject booking request
+  const handleUpdateRequest = async (bookingId, status) => {
+    setUpdatingId(bookingId);
+    try {
+      if (status === "approved") {
+        await updateBookingStatus(bookingId, "approved");
+        Alert.alert("Success", "Booking approved.");
+      } else {
+        await updateBookingStatus(bookingId, "rejected", "Rejected by landlord");
+        Alert.alert("Success", "Booking rejected.");
+      }
+      // Refresh requests
+      loadRequests();
+    } catch (error) {
+      console.error("Failed to update booking status", error);
+      Alert.alert("Error", "Failed to update booking status. Please try again.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const renderItem = ({ item }) => {
     const scale = new Animated.Value(1);
     const onPressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
     const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
 
-    const imageUrl = item.image || item.cover_image || item.images?.[0] || "https://via.placeholder.com/540x360?text=Property";
+    const imageUrl = getPrimaryImageUrl(item) || "";
+
     const isVerified = item.is_verified || item.verified || false;
-    const priceValue = item.price ? `${item.price.toLocaleString()} ETB / month` : "Price unavailable";
+    // Show price: prefer per month, then week, then day
+    let priceValue = "Price unavailable";
+    if (item.price_per_month) priceValue = `${item.price_per_month.toLocaleString()} ETB / month`;
+    else if (item.price_per_week) priceValue = `${item.price_per_week.toLocaleString()} ETB / week`;
+    else if (item.price_per_day) priceValue = `${item.price_per_day.toLocaleString()} ETB / day`;
     const badgeLabel = item.property_type || item.type || item.listing_type || "Property";
     const locationText = item.location || item.city || item.address || "";
     const titleText = item.title || item.name || "";
@@ -110,7 +175,7 @@ export default function MyListingsScreen({ navigation }) {
         onPressOut={onPressOut}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >
-        <Image source={{ uri: imageUrl }} style={styles.propertyImage} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.propertyImage} />
         <View style={styles.badgeRow}>
           {isVerified && (
             <View style={styles.verifiedBadge}>
@@ -121,7 +186,11 @@ export default function MyListingsScreen({ navigation }) {
             <TouchableOpacity
               style={styles.editButton}
               onPress={() =>
-                navigation.navigate("EditProperty", { propertyId: item.id })
+                navigation.navigate("EditListingScreen", {
+                  listingId: item.id,
+                  slug: item.slug,
+                  listingData: item,
+                })
               }
             >
               <Ionicons name="pencil" size={16} color="#fff" />
@@ -148,14 +217,6 @@ export default function MyListingsScreen({ navigation }) {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -174,26 +235,97 @@ export default function MyListingsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {properties.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="home-outline" size={64} color={colors.textSecondary} />
-          <Text style={styles.emptyTitle}>No Listings Yet</Text>
-          <Text style={styles.emptyDescription}>
-            You haven't posted any properties yet. Start by creating your first listing!
-          </Text>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => navigation.getParent()?.navigate("Post")}
-          >
-            <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.createButtonText}>Create Listing</Text>
-          </TouchableOpacity>
+      {/* Tab Switcher */}
+      <View style={styles.tabSwitcher}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "listings" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("listings")}
+        >
+          <Text style={[styles.tabText, activeTab === "listings" && styles.tabTextActive]}>My Listings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "requests" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("requests")}
+        >
+          <Text style={[styles.tabText, activeTab === "requests" && styles.tabTextActive]}>Requests</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Content */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
+      ) : activeTab === "listings" ? (
+        properties.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="home-outline" size={64} color={colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No Listings Yet</Text>
+            <Text style={styles.emptyDescription}>
+              You haven't posted any properties yet. Start by creating your first listing!
+            </Text>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => navigation.getParent()?.navigate("Post")}
+            >
+              <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.createButtonText}>Create Listing</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <FlatList
+            data={properties}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+              />
+            }
+          />
+        )
       ) : (
         <FlatList
-          data={properties}
+          data={requests}
           keyExtractor={(item) => String(item.id)}
-          renderItem={renderItem}
+          renderItem={({ item }) => (
+            <View style={styles.requestCard}>
+              <ImageWithFallback sourceUri={getPrimaryImageUrl(item.listing) || ""} style={styles.requestImage} />
+              <View style={styles.requestContent}>
+                <Text style={styles.requestTitle}>{item.listing?.title || "Untitled"}</Text>
+                <Text style={styles.requestRenter}>{item.renter_name || item.renter?.name || "Unknown renter"}</Text>
+                <Text style={styles.requestEmail}>{item.renter_email || item.renter?.email || ""}</Text>
+                <Text style={styles.requestDates}>
+                  {item.start_date} → {item.end_date}
+                </Text>
+                <Text style={styles.requestPrice}>Total: {item.total_price ? `${item.total_price.toLocaleString()} ETB` : "-"}</Text>
+                <View style={[styles.statusBadge, styles[`status${(item.status || "").toUpperCase()}`]]}>
+                  <Text style={styles.statusBadgeText}>{(item.status || "PENDING").toUpperCase()}</Text>
+                </View>
+                {item.status === "pending" && (
+                  <View style={styles.requestActions}>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.approveButton, updatingId === item.id && styles.actionButtonDisabled]}
+                      onPress={() => handleUpdateRequest(item.id, "approved")}
+                      disabled={updatingId === item.id}
+                    >
+                      <Text style={styles.actionButtonText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.rejectButton, updatingId === item.id && styles.actionButtonDisabled]}
+                      onPress={() => handleUpdateRequest(item.id, "rejected")}
+                      disabled={updatingId === item.id}
+                    >
+                      <Text style={styles.actionButtonText}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
@@ -201,6 +333,13 @@ export default function MyListingsScreen({ navigation }) {
               onRefresh={onRefresh}
               tintColor={colors.primary}
             />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="mail-outline" size={64} color={colors.textSecondary} />
+              <Text style={styles.emptyTitle}>No Requests</Text>
+              <Text style={styles.emptyDescription}>No booking requests yet.</Text>
+            </View>
           }
         />
       )}
@@ -252,6 +391,129 @@ const createStyles = (colors) =>
       alignItems: "center",
       paddingHorizontal: 32,
       backgroundColor: colors.muted,
+    },
+    tabSwitcher: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border || colors.muted,
+    },
+    tabButton: {
+      flex: 1,
+      paddingVertical: 12,
+      alignItems: 'center',
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
+    tabButtonActive: {
+      borderBottomColor: colors.primary,
+      backgroundColor: colors.surface,
+    },
+    tabText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    tabTextActive: {
+      color: colors.primary,
+    },
+    requestCard: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      marginVertical: 8,
+      marginHorizontal: 8,
+      padding: 12,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    requestImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 8,
+      marginRight: 12,
+      backgroundColor: colors.muted,
+    },
+    requestContent: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    requestTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 2,
+    },
+    requestRenter: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    requestEmail: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    requestDates: {
+      fontSize: 13,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    requestPrice: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: '600',
+      marginBottom: 2,
+    },
+    statusBadge: {
+      alignSelf: 'flex-start',
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      marginTop: 4,
+      marginBottom: 4,
+    },
+    statusPENDING: {
+      backgroundColor: '#ffeeba',
+    },
+    statusAPPROVED: {
+      backgroundColor: '#d4edda',
+    },
+    statusREJECTED: {
+      backgroundColor: '#f8d7da',
+    },
+    statusBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    requestActions: {
+      flexDirection: 'row',
+      marginTop: 8,
+    },
+    actionButton: {
+      flex: 1,
+      paddingVertical: 8,
+      marginHorizontal: 4,
+      borderRadius: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    approveButton: {
+      backgroundColor: colors.primary,
+    },
+    rejectButton: {
+      backgroundColor: '#e74c3c',
+    },
+    actionButtonText: {
+      color: '#fff',
+      fontWeight: '700',
+      fontSize: 15,
+    },
+    actionButtonDisabled: {
+      opacity: 0.6,
     },
     emptyTitle: {
       fontSize: 20,

@@ -4,6 +4,7 @@ const TOKEN_KEY = "auth_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const ONBOARDING_KEY = "has_seen_onboarding";
 const PROFILE_IMAGE_KEY_PREFIX = "profile_image_";
+const USER_ROLE_KEY = "user_role";
 
 export const saveToken = async (token) => {
   await AsyncStorage.setItem(TOKEN_KEY, token);
@@ -58,4 +59,16 @@ export const setItem = async (key, value) => {
 
 export const getItem = async (key) => {
   return await AsyncStorage.getItem(key);
+};
+
+export const saveRole = async (role) => {
+  await AsyncStorage.setItem(USER_ROLE_KEY, role);
+};
+
+export const getRole = async () => {
+  return await AsyncStorage.getItem(USER_ROLE_KEY);
+};
+
+export const removeRole = async () => {
+  await AsyncStorage.removeItem(USER_ROLE_KEY);
 };
