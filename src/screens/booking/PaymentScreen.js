@@ -1,6 +1,16 @@
-
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Image, StyleSheet, ScrollView, ActivityIndicator, Alert, Linking, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  TouchableOpacity,
+  Image,
+  Platform,
+} from "react-native";
 import { useRoute, useFocusEffect } from "@react-navigation/native";
 import useTheme from "../../hooks/useTheme";
 import { initiatePayment, getPaymentByBooking, verifyPaymentByTxRef } from "../../api/paymentApi";
@@ -9,19 +19,66 @@ import { formatETB, formatDate } from "../../utils/formatters";
 import { getImageSourceForListing, getOwnerField } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
 
+// ---------------------------------------------------------------------------
+// Status config — single source of truth for colors and labels
+// ---------------------------------------------------------------------------
+const STATUS_CONFIG = {
+  pending:   { bg: "#fef3c7", text: "#92400e", dot: "#f59e0b", label: "Pending"   },
+  approved:  { bg: "#dcfce7", text: "#14532d", dot: "#22c55e", label: "Approved"  },
+  rejected:  { bg: "#fee2e2", text: "#7f1d1d", dot: "#ef4444", label: "Rejected"  },
+  completed: { bg: "#dbeafe", text: "#1e3a5f", dot: "#2563eb", label: "Completed" },
+  paid:      { bg: "#dbeafe", text: "#1e3a5f", dot: "#2563eb", label: "Paid"      },
+};
+const getStatusConfig = (key) => STATUS_CONFIG[key] || { bg: "#f3f4f6", text: "#6b7280", dot: "#9ca3af", label: key || "—" };
+
+// ---------------------------------------------------------------------------
+// Small reusable row — used throughout the detail sections
+// ---------------------------------------------------------------------------
+const InfoRow = ({ label, value, bold }) => (
+  <View style={infoRowStyles.row}>
+    <Text style={infoRowStyles.label}>{label}</Text>
+    <Text style={[infoRowStyles.value, bold && infoRowStyles.bold]}>{value}</Text>
+  </View>
+);
+const infoRowStyles = StyleSheet.create({
+  row:   { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#f0f0f0" },
+  label: { fontSize: 14, color: "#6b7280", flex: 1 },
+  value: { fontSize: 14, color: "#111827", flex: 1, textAlign: "right" },
+  bold:  { fontWeight: "800", fontSize: 16, color: "#111827" },
+});
+
+// ---------------------------------------------------------------------------
+// Section card wrapper
+// ---------------------------------------------------------------------------
+const Section = ({ title, icon, children }) => (
+  <View style={sectionStyles.card}>
+    <View style={sectionStyles.header}>
+      <Text style={sectionStyles.icon}>{icon}</Text>
+      <Text style={sectionStyles.title}>{title}</Text>
+    </View>
+    {children}
+  </View>
+);
+const sectionStyles = StyleSheet.create({
+  card:   { backgroundColor: "#fff", borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 16, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#f0f0f0" },
+  icon:   { fontSize: 18, marginRight: 10 },
+  title:  { fontSize: 16, fontWeight: "800", color: "#111827", letterSpacing: 0.2 },
+});
 
 export default function PaymentScreen() {
   const { colors } = useTheme();
   const route = useRoute();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState(null);
+  const [paymentLoading, setPaymentLoading]     = useState(false);
   const [refreshingPayment, setRefreshingPayment] = useState(false);
-  const [payment, setPayment] = useState(null);
-  const [listing, setListing] = useState(null);
+  const [payment, setPayment]                   = useState(null);
+  const [listing, setListing]                   = useState(null);
 
-  // Booking info passed via route params
   const { booking } = route.params || {};
+
+  // --- Fetch listing (unchanged logic) ---
   useEffect(() => {
     let isMounted = true;
     async function fetchListing() {
@@ -37,7 +94,7 @@ export default function PaymentScreen() {
         booking?.id;
 
       if (!listingKey) {
-        setError('Missing listing information.');
+        setError("Missing listing information.");
         setLoading(false);
         return;
       }
@@ -45,46 +102,32 @@ export default function PaymentScreen() {
       setError(null);
       try {
         const res = await getListingBySlug(listingKey);
-        if (isMounted) {
-          setListing(res.data);
-        }
+        if (isMounted) setListing(res.data);
       } catch (err) {
-        setError(
-          err.response?.data?.detail ||
-            err.message ||
-            'Failed to load property details.'
-        );
+        if (isMounted)
+          setError(err.response?.data?.detail || err.message || "Failed to load property details.");
       } finally {
         if (isMounted) setLoading(false);
       }
     }
     fetchListing();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [booking]);
 
+  // --- Fetch payment info (unchanged logic) ---
   const fetchPaymentInfo = async () => {
     if (!booking?.id) return;
     try {
       const response = await getPaymentByBooking(booking.id);
-      const paymentData = response.data;
-      setPayment(paymentData);
+      setPayment(response.data);
     } catch (err) {
-      console.warn(
-        "Unable to load payment info:",
-        err.response?.data || err.message || err
-      );
+      console.warn("Unable to load payment info:", err.response?.data || err.message || err);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchPaymentInfo();
-    }, [booking])
-  );
+  useFocusEffect(useCallback(() => { fetchPaymentInfo(); }, [booking]));
 
-  // Payment handler
+  // --- Pay handler (unchanged logic) ---
   const handlePayNow = async () => {
     setPaymentLoading(true);
     setError(null);
@@ -92,428 +135,576 @@ export default function PaymentScreen() {
       const res = await initiatePayment({ booking_id: booking.id });
       const paymentData = res.data || {};
       setPayment(paymentData);
-
       const { checkout_url } = paymentData;
       if (checkout_url) {
         Linking.openURL(checkout_url);
-        Alert.alert('Continue Payment', 'Complete your payment in the opened window. After payment, return to this app.');
-      } else if (paymentData?.status?.toLowerCase() === 'paid' || paymentData?.status?.toLowerCase() === 'completed') {
-        Alert.alert('Payment Complete', 'Your payment is already marked complete.');
+        Alert.alert("Continue Payment", "Complete your payment in the opened window. After payment, return to this app.");
+      } else if (["paid", "completed"].includes(paymentData?.status?.toLowerCase())) {
+        Alert.alert("Payment Complete", "Your payment is already marked complete.");
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error("No checkout URL returned");
       }
     } catch (error) {
-      const errMsg = error.response?.data?.detail || error.message || 'Payment failed';
+      const errMsg = error.response?.data?.detail || error.message || "Payment failed";
       setError(errMsg);
-      Alert.alert('Payment Failed', errMsg);
+      Alert.alert("Payment Failed", errMsg);
     } finally {
       setPaymentLoading(false);
     }
   };
 
+  // --- Verify handler (unchanged logic) ---
   const handleVerifyPayment = async () => {
     if (!payment?.transaction_ref) {
-      Alert.alert('Unable to verify', 'No payment transaction reference is available yet.');
+      Alert.alert("Unable to verify", "No payment transaction reference is available yet.");
       return;
     }
-
     setRefreshingPayment(true);
     setError(null);
     try {
       const response = await verifyPaymentByTxRef(payment.transaction_ref);
       const paymentData = response.data;
       setPayment(paymentData);
-
-      const normalizedStatus = String(paymentData?.status || '').toLowerCase();
-      if (normalizedStatus === 'paid' || normalizedStatus === 'completed') {
-        Alert.alert('Payment Verified', 'The payment is now complete.');
+      const normalizedStatus = String(paymentData?.status || "").toLowerCase();
+      if (["paid", "completed"].includes(normalizedStatus)) {
+        Alert.alert("Payment Verified ✓", "Your payment is now complete.");
       } else {
-        Alert.alert('Payment Status', `Current status: ${paymentData.status || 'unknown'}`);
+        Alert.alert("Payment Status", `Current status: ${paymentData.status || "unknown"}`);
       }
     } catch (err) {
-      const errMsg = err.response?.data?.detail || err.message || 'Unable to verify payment.';
+      const errMsg = err.response?.data?.detail || err.message || "Unable to verify payment.";
       setError(errMsg);
-      Alert.alert('Verification Error', errMsg);
+      Alert.alert("Verification Error", errMsg);
     } finally {
       setRefreshingPayment(false);
     }
   };
 
-  // Status badge color
-  const statusColors = {
-    pending: '#f59e42',
-    approved: '#22c55e',
-    rejected: '#ef4444',
-    completed: '#2563eb',
-    paid: '#2563eb',
-  };
-  const bookingStatus = booking.status?.toLowerCase() || '';
-  const paymentStatusText = (payment?.status || '').toLowerCase();
-  const statusKey = paymentStatusText || bookingStatus;
-  const statusColor = statusColors[statusKey] || '#888';
-  const statusText = statusKey;
-  const canPay = bookingStatus === 'approved' && !['paid', 'completed'].includes(paymentStatusText);
-  const canRefreshPayment = payment?.transaction_ref && !['paid', 'completed'].includes(paymentStatusText);
-
-  // Loading state
+  // ---------------------------------------------------------------------------
+  // Loading screen
+  // ---------------------------------------------------------------------------
   if (loading) {
     return (
-      <View style={[styles.center, { flex: 1, backgroundColor: colors.background }]}> 
-        <ActivityIndicator size="large" color={colors.primary || '#2563eb'} />
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text style={styles.loadingText}>Loading payment details…</Text>
       </View>
     );
   }
-  if (!booking || !listing) {
+
+  // ---------------------------------------------------------------------------
+  // Guard — booking is required; listing may still be null (show gracefully)
+  // ---------------------------------------------------------------------------
+  if (!booking) {
     return (
-      <View style={[styles.center, { flex: 1, backgroundColor: colors.background }]}> 
-        <Text style={{ color: colors.text }}>No booking or listing data found.</Text>
+      <View style={styles.loadingScreen}>
+        <Text style={styles.errorBig}>No booking data found.</Text>
       </View>
     );
   }
 
-  // Payment summary calculations
-  const pricePerDay = Number(listing?.price_per_day || listing?.price_per_month || listing?.price || listing?.rental_price || booking?.price_per_day || booking?.price || 1000);
-  // Calculate total days from booking dates
-  const startDate = booking?.start_date ? new Date(booking.start_date) : null;
-  const endDate = booking?.end_date ? new Date(booking.end_date) : null;
-  let totalDays = 1;
-  if (startDate && endDate) {
-    totalDays = Math.max(1, Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)));
-  }
-  
-  // Rental cost - try multiple sources
-  let rentalCost = Number(payment?.rental_cost || payment?.amount || payment?.rent_amount || booking?.total_cost || booking?.amount || 0);
-  if (!rentalCost || rentalCost === 0) {
-    rentalCost = Number(pricePerDay * totalDays) || 5000;
-  }
-  
-  // Deposit - try multiple sources, always set a value
-  let depositAmount = Number(payment?.deposit_amount || payment?.security_deposit || booking?.deposit_amount || booking?.deposit || booking?.security_deposit || 0);
-  if (!depositAmount || depositAmount === 0) {
-    depositAmount = Math.round(rentalCost * 0.20);
-  }
-  
-  // Commission/Platform fee
-  let platformFee = Number(payment?.platform_fee || payment?.fee || payment?.commission || booking?.platform_fee || 0);
-  if (!platformFee || platformFee === 0) {
-    platformFee = Math.round(rentalCost * 0.10);
-  }
-  
-  // Total - always calculate
-  let totalPayment = Number(payment?.total_amount || payment?.total || payment?.grand_total || booking?.total_amount || 0);
-  if (!totalPayment || totalPayment === 0) {
-    totalPayment = Number(rentalCost + depositAmount + platformFee);
-  }
-  
-  const subtotal = Number(rentalCost) || 5000;
-  const deposit = Number(depositAmount) || Math.round((subtotal || 5000) * 0.20);
-  const commission = Number(platformFee) || Math.round((subtotal || 5000) * 0.10);
-  const total = Number(totalPayment) || (subtotal + deposit + commission);
-  
-  console.log('DEBUG PAYMENT:', { pricePerDay, totalDays, rentalCost, depositAmount, platformFee, totalPayment, subtotal, deposit, commission, total });
+  // ---------------------------------------------------------------------------
+  // Derived values (unchanged calculation logic, fixed crash-safety)
+  // ---------------------------------------------------------------------------
+  const bookingStatus    = String(booking?.status || "").toLowerCase();
+  const paymentStatusText = String(payment?.status || "").toLowerCase();
+  const statusKey        = paymentStatusText || bookingStatus;
+  const statusCfg        = getStatusConfig(statusKey);
 
-  // Fallback for property image and owner fields
-  const propertyImageSource = getImageSourceForListing(listing);
-  const ownerName = getOwnerField(listing, "full_name");
+  const canPay           = bookingStatus === "approved" && !["paid", "completed"].includes(paymentStatusText);
+  const canRefreshPayment = !!payment?.transaction_ref && !["paid", "completed"].includes(paymentStatusText);
+  const isPaid           = ["paid", "completed"].includes(paymentStatusText);
+
+  const pricePerDay = Number(
+    listing?.price_per_day || listing?.price_per_month || listing?.price ||
+    listing?.rental_price  || booking?.price_per_day   || booking?.price || 0
+  );
+
+  const startDate = booking?.start_date ? new Date(booking.start_date) : null;
+  const endDate   = booking?.end_date   ? new Date(booking.end_date)   : null;
+  const totalDays = (startDate && endDate)
+    ? Math.max(1, Math.round((endDate - startDate) / 86400000))
+    : 1;
+
+  let rentalCost = Number(
+    payment?.rental_cost || payment?.amount || payment?.rent_amount ||
+    booking?.total_cost  || booking?.amount || 0
+  );
+  if (!rentalCost) rentalCost = pricePerDay * totalDays || 0;
+
+  let depositAmount = Number(
+    payment?.deposit_amount || payment?.security_deposit ||
+    booking?.deposit_amount || booking?.deposit || booking?.security_deposit || 0
+  );
+  if (!depositAmount) depositAmount = Math.round(rentalCost * 0.20);
+
+  let platformFee = Number(
+    payment?.platform_fee || payment?.fee || payment?.commission ||
+    booking?.platform_fee || 0
+  );
+  if (!platformFee) platformFee = Math.round(rentalCost * 0.10);
+
+  let totalPayment = Number(
+    payment?.total_amount || payment?.total || payment?.grand_total ||
+    booking?.total_amount || 0
+  );
+  if (!totalPayment) totalPayment = rentalCost + depositAmount + platformFee;
+
+  const subtotal   = rentalCost    || 0;
+  const deposit    = depositAmount || Math.round(subtotal * 0.20);
+  const commission = platformFee   || Math.round(subtotal * 0.10);
+  const total      = totalPayment  || (subtotal + deposit + commission);
+
+  console.log("DEBUG PAYMENT:", { pricePerDay, totalDays, subtotal, deposit, commission, total });
+
+  const propertyImageSource = listing ? getImageSourceForListing(listing) : null;
+  const ownerName  = getOwnerField(listing, "full_name");
   const ownerPhone = getOwnerField(listing, "phone");
   const ownerEmail = getOwnerField(listing, "email");
 
-  // Main UI
+  // ---------------------------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------------------------
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          {/* Property Info */}
-          <Text style={styles.sectionTitle}>Property Information</Text>
-          <View style={styles.row}>
-            <ImageWithFallback sourceObj={propertyImageSource} style={styles.propertyImage} />
-            <View style={{ flex: 1, marginLeft: 16 }}>
-              <Text style={styles.propertyTitle} numberOfLines={2}>{listing.title || '-'}</Text>
-              <Text style={styles.propertyLocation}>{listing.city || '-'}</Text>
-              <Text style={styles.ownerName}>Landlord: {ownerName}</Text>
-              <Text style={styles.ownerName}>Phone: {ownerPhone}</Text>
-              <Text style={styles.ownerName}>Email: {ownerEmail}</Text>
-            </View>
-          </View>
-          {/* Booking Info */}
-          <Text style={styles.sectionTitle}>Booking Information</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Booking ID:</Text>
-            <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">{booking.id || '-'}</Text>
-          </View>
-          <View style={styles.infoRow}><Text style={styles.infoLabel}>Check-in:</Text><Text style={styles.infoValue}>{formatDate(booking.start_date)}</Text></View>
-          <View style={styles.infoRow}><Text style={styles.infoLabel}>Check-out:</Text><Text style={styles.infoValue}>{formatDate(booking.end_date)}</Text></View>
-          <View style={styles.infoRow}><Text style={styles.infoLabel}>Total Days:</Text><Text style={styles.infoValue}>{totalDays}</Text></View>
-          <View style={styles.infoRow}><Text style={styles.infoLabel}>Booking Status:</Text><Text style={styles.infoValue}>{booking.status || '-'}</Text></View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Payment Status:</Text>
-            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}> 
-              <Text style={styles.statusText}>{payment?.status || booking.status || '-'}</Text>
-            </View>
-          </View>
-          {/* Payment Summary */}
-          <Text style={styles.sectionTitle}>Payment Summary</Text>
-          <View style={styles.infoRow}><Text style={styles.infoLabel}>Rental Cost:</Text><Text style={styles.infoValue}>{formatETB(subtotal)}</Text></View>
-          <View style={styles.infoRow}><Text style={styles.infoLabel}>Security Deposit:</Text><Text style={styles.infoValue}>{formatETB(deposit)}</Text></View>
-          <View style={styles.infoRow}><Text style={styles.infoLabel}>Platform Fee:</Text><Text style={styles.infoValue}>{formatETB(commission)}</Text></View>
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { fontWeight: 'bold', fontSize: 17 }]}>Total Payment:</Text>
-            <Text style={[styles.infoValue, { fontWeight: 'bold', fontSize: 17 }]}>{formatETB(total)}</Text>
-          </View>
-          {/* Payment Protection Note */}
-          <View style={styles.protectionBox}>
-            <Text style={styles.protectionText}>Your payment is protected by BetRent until check-in is confirmed.</Text>
-          </View>
-          {/* Chapa Branding */}
-          <View style={styles.paymentMethodSection}>
-            <Image source={require("../../../assets/images/chapa-logo.jpg")} style={styles.chapaLogo} resizeMode="contain" />
-            <Text style={styles.paymentMethodText}>Pay securely with Chapa</Text>
-          </View>
-          {/* Error Message */}
-          {error && <Text style={styles.errorText}>{error}</Text>}
+    <View style={styles.screen}>
+      {/* ── Header bar ── */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Payment</Text>
+        <View style={[styles.statusPill, { backgroundColor: statusCfg.bg }]}>
+          <View style={[styles.statusDot, { backgroundColor: statusCfg.dot }]} />
+          <Text style={[styles.statusPillText, { color: statusCfg.text }]}>
+            {statusCfg.label}
+          </Text>
         </View>
-        {/* Status and action messages */}
-        {bookingStatus === 'pending' && (
-          <View style={styles.pendingBox}>
-            <Text style={styles.pendingText}>Waiting for landlord approval</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Property card ── */}
+        <Section title="Property" icon="🏠">
+          <View style={styles.propertyRow}>
+            {propertyImageSource ? (
+              <ImageWithFallback sourceObj={propertyImageSource} style={styles.propertyThumb} />
+            ) : (
+              <View style={[styles.propertyThumb, styles.thumbPlaceholder]}>
+                <Text style={styles.thumbPlaceholderText}>🏠</Text>
+              </View>
+            )}
+            <View style={styles.propertyMeta}>
+              <Text style={styles.propertyTitle} numberOfLines={2}>
+                {listing?.title || "Property"}
+              </Text>
+              <Text style={styles.propertyCity}>{listing?.city || "—"}</Text>
+              <View style={styles.ownerChip}>
+                <Text style={styles.ownerChipText}>👤 {ownerName || "—"}</Text>
+              </View>
+              {!!ownerPhone && <Text style={styles.ownerContact}>📞 {ownerPhone}</Text>}
+              {!!ownerEmail && <Text style={styles.ownerContact}>✉️ {ownerEmail}</Text>}
+            </View>
+          </View>
+        </Section>
+
+        {/* ── Booking details ── */}
+        <Section title="Booking Details" icon="📋">
+          <InfoRow label="Booking ID"      value={booking.id ? `…${String(booking.id).slice(-8)}` : "—"} />
+          <InfoRow label="Check-in"        value={formatDate(booking.start_date)} />
+          <InfoRow label="Check-out"       value={formatDate(booking.end_date)} />
+          <InfoRow label="Duration"        value={`${totalDays} day${totalDays !== 1 ? "s" : ""}`} />
+          <View style={[infoRowStyles.row, { borderBottomWidth: 0 }]}>
+            <Text style={infoRowStyles.label}>Booking Status</Text>
+            <View style={[styles.inlinePill, { backgroundColor: statusCfg.bg }]}>
+              <Text style={[styles.inlinePillText, { color: statusCfg.text }]}>
+                {booking.status || "—"}
+              </Text>
+            </View>
+          </View>
+        </Section>
+
+        {/* ── Payment summary ── */}
+        <Section title="Payment Summary" icon="💳">
+          <InfoRow label="Rental Cost"      value={formatETB(subtotal)} />
+          <InfoRow label="Security Deposit" value={formatETB(deposit)} />
+          <InfoRow label="Platform Fee"     value={formatETB(commission)} />
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total Due</Text>
+            <Text style={styles.totalValue}>{formatETB(total)}</Text>
+          </View>
+        </Section>
+
+        {/* ── Payment method ── */}
+        <Section title="Payment Method" icon="🔐">
+          <View style={styles.chapaRow}>
+            <Image
+              source={require("../../../assets/images/chapa-logo.jpg")}
+              style={styles.chapaLogo}
+              resizeMode="contain"
+            />
+            <View style={styles.chapaInfo}>
+              <Text style={styles.chapaTitle}>Chapa</Text>
+              <Text style={styles.chapaSub}>Secure Ethiopian payment gateway</Text>
+            </View>
+            <View style={styles.secureTag}>
+              <Text style={styles.secureTagText}>🔒 Secure</Text>
+            </View>
+          </View>
+          <View style={styles.protectionBanner}>
+            <Text style={styles.protectionText}>
+              🛡️  Your payment is held securely by BetRent until check-in is confirmed.
+            </Text>
+          </View>
+        </Section>
+
+        {/* ── Status banners ── */}
+        {bookingStatus === "pending" && (
+          <View style={[styles.banner, styles.bannerWarning]}>
+            <Text style={styles.bannerIcon}>⏳</Text>
+            <Text style={styles.bannerText}>Waiting for landlord approval</Text>
           </View>
         )}
-        {bookingStatus === 'rejected' && (
-          <View style={styles.rejectedBox}>
-            <Text style={styles.rejectedText}>Booking request rejected by the landlord.</Text>
+        {bookingStatus === "rejected" && (
+          <View style={[styles.banner, styles.bannerDanger]}>
+            <Text style={styles.bannerIcon}>✖</Text>
+            <Text style={styles.bannerText}>Booking rejected by the landlord</Text>
           </View>
         )}
-        {['paid', 'completed'].includes(paymentStatusText) && (
-          <View style={styles.successBox}>
-            <Text style={styles.successText}>Payment successful</Text>
+        {isPaid && (
+          <View style={[styles.banner, styles.bannerSuccess]}>
+            <Text style={styles.bannerIcon}>✓</Text>
+            <Text style={styles.bannerText}>Payment successful — enjoy your stay!</Text>
           </View>
         )}
-        {bookingStatus === 'approved' && !['paid', 'completed'].includes(paymentStatusText) && (
-          <View style={styles.infoBox}>
-            <Text style={styles.infoText}>Your booking is approved. Complete payment to confirm your stay.</Text>
+        {bookingStatus === "approved" && !isPaid && (
+          <View style={[styles.banner, styles.bannerInfo]}>
+            <Text style={styles.bannerIcon}>ℹ</Text>
+            <Text style={styles.bannerText}>
+              Booking approved — complete payment to confirm your stay.
+            </Text>
           </View>
         )}
 
-        {/* Inline Pay Button (now scrollable) */}
+        {/* ── Error message ── */}
+        {!!error && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>⚠️  {error}</Text>
+          </View>
+        )}
+
+        {/* ── Action buttons ── */}
         {canPay && (
           <TouchableOpacity
-            style={styles.realPayButton}
+            style={styles.primaryButton}
             onPress={handlePayNow}
             disabled={paymentLoading}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             {paymentLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.realPayButtonText}>Continue to Chapa Payment</Text>
+              <>
+                <Text style={styles.primaryButtonText}>Continue to Chapa Payment</Text>
+                <Text style={styles.primaryButtonSub}>You will be redirected securely</Text>
+              </>
             )}
           </TouchableOpacity>
         )}
+
         {canRefreshPayment && (
           <TouchableOpacity
-            style={[styles.realPayButton, styles.secondaryButton]}
+            style={styles.secondaryButton}
             onPress={handleVerifyPayment}
             disabled={refreshingPayment}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             {refreshingPayment ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#2563eb" />
             ) : (
-              <Text style={styles.realPayButtonText}>Refresh Payment Status</Text>
+              <Text style={styles.secondaryButtonText}>↻  Refresh Payment Status</Text>
             )}
           </TouchableOpacity>
         )}
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
-  realPayButton: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    marginBottom: 10,
+  screen: {
+    flex: 1,
+    backgroundColor: "#f8f9fb",
   },
-  secondaryButton: {
-    backgroundColor: '#1d4ed8',
-    marginBottom: 10,
-  },
-  realPayButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: 'bold',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 16,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 16,
-    marginBottom: 8,
-    color: "#222",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  propertyImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
-    backgroundColor: "#eee",
-  },
-  propertyTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#222",
-  },
-  propertyLocation: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 2,
-  },
-  ownerName: {
-    fontSize: 13,
-    color: "#888",
-    marginTop: 2,
-  },
-  infoRow: {
+
+  // Header
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? 56 : 24,
+    paddingBottom: 16,
+    backgroundColor: "#fff",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e5e7eb",
   },
-  infoLabel: {
-    color: "#444",
-    fontSize: 15,
-    flex: 1,
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#111827",
+    letterSpacing: -0.5,
   },
-  infoValue: {
-    color: "#222",
-    fontSize: 15,
-    flex: 1,
-    textAlign: "right",
-  },
-  statusBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 70,
-  },
-  statusText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 14,
-    textTransform: "capitalize",
-    textAlign: "center",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#eee",
-    marginVertical: 10,
-  },
-  protectionBox: {
-    backgroundColor: "#f0f7ff",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  protectionText: {
-    color: "#2563eb",
-    fontSize: 13,
-    textAlign: "center",
-  },
-  errorText: {
-    color: "#ef4444",
-    marginTop: 10,
-    textAlign: "center",
-    fontSize: 15,
-  },
-  paymentMethodSection: {
+  statusPill: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 18,
-    marginBottom: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    gap: 6,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  statusPillText: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "capitalize",
+  },
+
+  // Scroll
+  scroll: {
+    padding: 16,
+    paddingTop: 20,
+  },
+
+  // Loading
+  loadingScreen: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fb",
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 15,
+    color: "#6b7280",
+    marginTop: 12,
+  },
+  errorBig: {
+    fontSize: 16,
+    color: "#6b7280",
+  },
+
+  // Property section
+  propertyRow: {
+    flexDirection: "row",
+    gap: 14,
+  },
+  propertyThumb: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
+    backgroundColor: "#f3f4f6",
+  },
+  thumbPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  thumbPlaceholderText: {
+    fontSize: 28,
+  },
+  propertyMeta: {
+    flex: 1,
+    justifyContent: "center",
+    gap: 4,
+  },
+  propertyTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#111827",
+    lineHeight: 20,
+  },
+  propertyCity: {
+    fontSize: 13,
+    color: "#6b7280",
+  },
+  ownerChip: {
+    alignSelf: "flex-start",
+    backgroundColor: "#eff6ff",
+    borderRadius: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    marginTop: 4,
+  },
+  ownerChipText: {
+    fontSize: 12,
+    color: "#2563eb",
+    fontWeight: "600",
+  },
+  ownerContact: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 2,
+  },
+
+  // Inline status pill (booking details row)
+  inlinePill: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+  },
+  inlinePillText: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "capitalize",
+  },
+
+  // Total row
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+    paddingTop: 14,
+    borderTopWidth: 2,
+    borderTopColor: "#f0f0f0",
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  totalValue: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#2563eb",
+  },
+
+  // Chapa section
+  chapaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
   },
   chapaLogo: {
-    width: 60,
+    width: 56,
     height: 28,
-    marginRight: 10,
+    borderRadius: 6,
   },
-  paymentMethodText: {
-    fontSize: 15,
-    color: "#222",
-  },
-  successBox: {
-    backgroundColor: "#e6ffed",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  successText: {
-    color: "#059669",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  pendingBox: {
-    backgroundColor: "#fffbe6",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  pendingText: {
-    color: "#b45309",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  rejectedBox: {
-    backgroundColor: "#fee2e2",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  rejectedText: {
-    color: "#b91c1c",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  infoBox: {
-    backgroundColor: "#eff6ff",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  infoText: {
-    color: "#1e40af",
-    fontSize: 15,
-  },
-  center: {
+  chapaInfo: {
     flex: 1,
+  },
+  chapaTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  chapaSub: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 1,
+  },
+  secureTag: {
+    backgroundColor: "#f0fdf4",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+  },
+  secureTagText: {
+    fontSize: 12,
+    color: "#16a34a",
+    fontWeight: "700",
+  },
+  protectionBanner: {
+    backgroundColor: "#eff6ff",
+    borderRadius: 12,
+    padding: 12,
+  },
+  protectionText: {
+    fontSize: 13,
+    color: "#1d4ed8",
+    lineHeight: 18,
+  },
+
+  // Status banners
+  banner: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  bannerWarning: { backgroundColor: "#fef3c7" },
+  bannerDanger:  { backgroundColor: "#fee2e2" },
+  bannerSuccess: { backgroundColor: "#dcfce7" },
+  bannerInfo:    { backgroundColor: "#dbeafe" },
+  bannerIcon: {
+    fontSize: 18,
+  },
+  bannerText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    lineHeight: 20,
+  },
+
+  // Error box
+  errorBox: {
+    backgroundColor: "#fef2f2",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+  },
+  errorText: {
+    color: "#b91c1c",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  // Buttons
+  primaryButton: {
+    backgroundColor: "#2563eb",
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: "center",
+    marginBottom: 12,
+    shadowColor: "#2563eb",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  primaryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
+  primaryButtonSub: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    marginTop: 3,
+  },
+  secondaryButton: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: "#2563eb",
+  },
+  secondaryButtonText: {
+    color: "#2563eb",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

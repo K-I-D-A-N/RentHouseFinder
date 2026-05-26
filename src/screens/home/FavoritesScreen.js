@@ -1,75 +1,135 @@
-import React, { useMemo, useState, useEffect } from "react";
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
 import { getPrimaryImageUrl } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
 
+const FAVORITES_KEY = "betrent_favorite_ids";
+
+async function loadFavoriteIds() {
+  try {
+    const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+async function saveFavoriteIds(ids) {
+  try {
+    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify([...ids]));
+  } catch {}
+}
+
 export default function FavoritesScreen({ navigation }) {
-  const [favorites, setFavorites] = useState([]);
+  const [allProperties, setAllProperties] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const normalizeList = (data) => {
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data.items)) return data.items;
-    if (Array.isArray(data.results)) return data.results;
-    return [];
-  };
+  // Reload both favorites and all properties every time screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => {
+        setLoading(true);
+        try {
+          const [ids, response] = await Promise.all([
+            loadFavoriteIds(),
+            getProperties(),
+          ]);
+          setFavoriteIds(ids);
+          const data = response.data;
+          const items = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+            ? data.items
+            : [];
+          setAllProperties(items);
+        } catch (error) {
+          console.error("Failed to load favorites", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      load();
+    }, [])
+  );
 
-  const loadFavorites = async () => {
-    setLoading(true);
-    try {
-      const response = await getProperties({ favorite: true });
-      const fetched = normalizeList(response.data);
-      if (fetched.length) {
-        setFavorites(fetched);
+  // Only show properties the user has favorited
+  const favorites = useMemo(
+    () => allProperties.filter((p) => favoriteIds.has(String(p.id || p._id || p.pk || ""))),
+    [allProperties, favoriteIds]
+  );
+
+  // Unfavorite directly from this screen — same toggle logic as HomeScreen
+  const toggleFavorite = useCallback(async (itemId) => {
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
       } else {
-        const fallbackResponse = await getProperties();
-        setFavorites(normalizeList(fallbackResponse.data));
+        next.add(itemId);
       }
-    } catch (error) {
-      console.error("Failed to load favorite properties", error);
-      try {
-        const fallbackResponse = await getProperties();
-        setFavorites(normalizeList(fallbackResponse.data));
-      } catch (fallbackError) {
-        console.error("Fallback load failed", fallbackError);
-        setFavorites([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadFavorites();
+      saveFavoriteIds(next);
+      return next;
+    });
   }, []);
-
-  const makeImageUri = (image) => {
-    if (!image) return "";
-    if (typeof image === "string") return image;
-    if (typeof image === "object") return image.uri || image.url || image.path || "";
-    return String(image);
-  };
 
   const renderItem = ({ item }) => {
     const imageUrl = getPrimaryImageUrl(item) || "";
-    const price = item.price || item.rent || 0;
+    const itemId = String(item.id || item._id || item.pk || "");
+    const isFavorited = favoriteIds.has(itemId);
+    const price = item.price_per_month || item.price_per_week || item.price_per_day || item.price || 0;
+    const priceUnit = item.price_per_month ? "month" : item.price_per_week ? "week" : "day";
     const location = item.location || item.city || item.address || "Unknown location";
+    const title = item.title || item.name || "";
 
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id || item._id, slug: item.slug } })}
+        activeOpacity={0.9}
+        onPress={() =>
+          navigation.navigate("HomeTab", {
+            screen: "PropertyDetailScreen",
+            params: { id: item.id || item._id, slug: item.slug },
+          })
+        }
       >
         <ImageWithFallback sourceUri={imageUrl} style={styles.image} />
+
+        {/* Heart button on the card image — same as HomeScreen */}
+        <TouchableOpacity
+          style={styles.heartButton}
+          onPress={() => toggleFavorite(itemId)}
+          activeOpacity={0.75}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Icon
+            name={isFavorited ? "favorite" : "favorite-border"}
+            size={20}
+            color={isFavorited ? "#f5a623" : "#fff"}
+          />
+        </TouchableOpacity>
+
         <View style={styles.cardBody}>
           <View style={styles.cardHeader}>
-            <Text style={styles.price}>ETB {price.toLocaleString()}/month</Text>
+            <Text style={styles.price}>
+              ETB {Number(price).toLocaleString()} / {priceUnit}
+            </Text>
           </View>
+          {!!title && <Text style={styles.titleText} numberOfLines={1}>{title}</Text>}
           <Text style={styles.location}>{location}</Text>
         </View>
       </TouchableOpacity>
@@ -91,97 +151,61 @@ export default function FavoritesScreen({ navigation }) {
       ) : (
         <FlatList
           data={favorites}
-          keyExtractor={(item, index) => String(item.id || item._id || item.pk || index)}
+          keyExtractor={(item, index) =>
+            String(item.id || item._id || item.pk || index)
+          }
           contentContainerStyle={styles.list}
           renderItem={renderItem}
-          ListEmptyComponent={<Text style={styles.emptyText}>No saved properties yet.</Text>}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No saved properties yet.</Text>
+          }
         />
       )}
     </View>
   );
 }
 
-const createStyles = (colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 24,
-  },
-  header: {
-    paddingHorizontal: 20,
-    marginBottom: 18,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: colors.text,
-  },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  list: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 28,
-    overflow: "hidden",
-    marginBottom: 18,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.05,
-    shadowRadius: 24,
-    elevation: 6,
-  },
-  image: {
-    width: "100%",
-    height: 180,
-  },
-  cardBody: {
-    padding: 18,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  price: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: colors.text,
-  },
-  deleteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: "rgba(231, 76, 60, 0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  location: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 18,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 40,
-  },
-  loadingText: {
-    marginTop: 14,
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 40,
-    color: colors.textSecondary,
-    fontSize: 16,
-  },
-});
+const createStyles = (colors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background, paddingTop: 24 },
+    header: { paddingHorizontal: 20, marginBottom: 18 },
+    title: { fontSize: 28, fontWeight: "900", color: colors.text },
+    subtitle: { marginTop: 8, fontSize: 14, color: colors.textSecondary },
+    list: { paddingHorizontal: 20, paddingBottom: 24 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 28,
+      overflow: "hidden",
+      marginBottom: 18,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 14 },
+      shadowOpacity: 0.05,
+      shadowRadius: 24,
+      elevation: 6,
+    },
+    image: { width: "100%", height: 180 },
+    heartButton: {
+      position: "absolute",
+      top: 14,
+      right: 14,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    cardBody: { padding: 18 },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 6,
+    },
+    price: { fontSize: 20, fontWeight: "800", color: colors.text },
+    titleText: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 6 },
+    location: { fontSize: 14, color: colors.textSecondary },
+    loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 40 },
+    loadingText: { marginTop: 14, color: colors.textSecondary, fontSize: 16 },
+    emptyText: { textAlign: "center", marginTop: 40, color: colors.textSecondary, fontSize: 16 },
+  });
