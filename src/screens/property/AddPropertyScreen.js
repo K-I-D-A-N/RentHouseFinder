@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import useTheme from "../../hooks/useTheme";
 import useAuth from "../../hooks/useAuth";
-import { createProperty } from "../../api/propertyApi";
+import { createProperty, uploadListingImage } from "../../api/propertyApi";
 import { getCategories } from "../../api/categoryApi";
 
 export default function AddPropertyScreen({ navigation }) {
@@ -194,6 +194,7 @@ export default function AddPropertyScreen({ navigation }) {
       }
 
       await createProperty(formData);
+      console.log("Property created successfully!");
       Alert.alert("Success", "Property posted successfully!");
       
       // Reset form

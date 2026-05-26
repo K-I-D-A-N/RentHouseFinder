@@ -10,6 +10,7 @@ import {
   FlatList,
   Dimensions,
   Platform,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -131,14 +132,70 @@ export default function PropertyDetailScreen({ route, navigation }) {
     return String(image);
   };
 
-  const primary = getPrimaryImageUrl(property) || makeImageUri(routeImage) || makeImageUri(property.image) || makeImageUri(property.cover_image) || "";
-  const extraImages = Array.isArray(property.images) ? property.images.map((i) => i?.image_url || i?.url || i?.image || i?.uri || "").filter(Boolean) : [];
+  // Normalize image URLs to include base URL
+  const normalizeUrl = (url) => {
+    if (!url || typeof url !== "string") return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith("/")) return `https://betrent-u5jj.onrender.com${url}`;
+    return `https://betrent-u5jj.onrender.com/${url}`;
+  };
+
+  const primary = getPrimaryImageUrl(property) || normalizeUrl(makeImageUri(routeImage)) || normalizeUrl(makeImageUri(property.image)) || normalizeUrl(makeImageUri(property.cover_image)) || "";
+  const extraImages = Array.isArray(property.images) 
+    ? property.images
+        .map((i) => normalizeUrl(i?.image_url || i?.url || i?.image || i?.uri || ""))
+        .filter(Boolean) 
+    : [];
   const heroImages = primary ? [primary, ...extraImages.filter((u) => u !== primary)] : extraImages.length ? extraImages : ["https://via.placeholder.com/1080x720?text=No+Image"];
 
-  const availability =
-    property.is_available ?? property.available ??
+  // Check if property is rented
+  const isRented = (() => {
+    // Explicit rented flag
+    if (property.is_rented === true) return true;
+    if (property.rented === true) return true;
+    
+    // Status field check - multiple possible values
+    if (typeof property.status === "string") {
+      const statusLower = property.status.toLowerCase();
+      if (/rented|occupied|booked|unavailable/i.test(statusLower)) {
+        console.log("DEBUG: Property marked as rented via status:", property.status);
+        return true;
+      }
+    }
+    
+    // Availability checks
+    if (property.is_available === false) {
+      console.log("DEBUG: Property marked as rented via is_available=false");
+      return true;
+    }
+    if (property.available === false) {
+      console.log("DEBUG: Property marked as rented via available=false");
+      return true;
+    }
+    
+    // Check nested bookings from backend
+    const bookings = property.bookings || property.booking_set || property.active_bookings || [];
+    if (Array.isArray(bookings) && bookings.length > 0) {
+      for (const b of bookings) {
+        const bStatus = String(b?.status || "").toLowerCase();
+        const paymentStatus = String(b?.payment_status || b?.payment?.status || "").toLowerCase();
+        if (bStatus === "completed" || bStatus === "rented" || bStatus === "approved") {
+          if (paymentStatus === "paid" || paymentStatus === "completed") {
+            console.log("DEBUG: Property marked as rented via booking:", bStatus, paymentStatus);
+            return true;
+          }
+        }
+      }
+    }
+    
+    console.log("DEBUG: Property is available - no rented indicators found");
+    return false;
+  })();
+
+  const availability = !isRented &&
+    (property.is_available ?? property.available ??
     (typeof property.status === "string" ? property.status.toLowerCase().includes("available") : undefined) ??
-    true;
+    true);
 
   const makeString = (value) => {
     if (value == null) return "";
@@ -150,7 +207,6 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const description = property.description || property.summary || property.details || "No description available.";
   const owner = property.owner || property.host || {};
   const ownerName = getOwnerField(property, "full_name");
-  const ownerPhone = getOwnerField(property, "phone");
   const ownerEmail = getOwnerField(property, "email");
   const category = makeString(property.category || property.property_type || property.type) || "General";
   const location = makeString(property.location || property.city || property.address) || "Location unavailable";
@@ -167,7 +223,12 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const canBook = availability && !isLandlord;
 
   const handleBookNow = () => {
-    if (!currentListingId || !canBook) return;
+    if (!currentListingId) return;
+    if (isRented) {
+      Alert.alert("Already rented", "This house is already rented.");
+      return;
+    }
+    if (!canBook) return;
     const bookingImage = heroImages[0] || routeImage;
     const bookingTitle = property.title || property.name || routeTitle || "Booking";
     const bookingPrice = routePricePerDay || property.price_per_day || property.price || 0;
@@ -204,8 +265,8 @@ export default function PropertyDetailScreen({ route, navigation }) {
             <Text style={[styles.priceText, { color: colors.primary }]}>{priceLabel}</Text>
           </View>
           <View style={styles.metaRight}>
-            <View style={[styles.statusPill, { backgroundColor: availability ? "#dff6e7" : "#f8d7da" }]}> 
-              <Text style={[styles.statusText, { color: availability ? "#1f7a3f" : "#842029" }]}>{availability ? "Available" : "Unavailable"}</Text>
+            <View style={[styles.statusPill, { backgroundColor: isRented ? "#fee2e2" : availability ? "#dff6e7" : "#f8d7da" }]}> 
+              <Text style={[styles.statusText, { color: isRented ? "#9f1239" : availability ? "#1f7a3f" : "#842029" }]}>{isRented ? "Rented" : availability ? "Available" : "Unavailable"}</Text>
             </View>
             {typeof views !== "undefined" && (
               <Text style={styles.viewText}>{views} views</Text>
@@ -234,7 +295,6 @@ export default function PropertyDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.ownerDetails}>
               <Text style={[styles.ownerName, { color: colors.text }]}>{ownerName}</Text>
-              <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>Phone: {ownerPhone}</Text>
               <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>Email: {ownerEmail}</Text>
             </View>
           </View>
@@ -282,16 +342,19 @@ export default function PropertyDetailScreen({ route, navigation }) {
         <TouchableOpacity
           style={[
             styles.bookButton,
-            (!canBook || !availability) && styles.disabledButton,
-            { backgroundColor: canBook ? colors.primary : colors.border },
+            (!canBook || !availability || isRented) && styles.disabledButton,
+            { backgroundColor: canBook && !isRented ? colors.primary : colors.border },
           ]}
-          disabled={!canBook || !availability}
+          disabled={!canBook || !availability || isRented}
           onPress={handleBookNow}
         >
-          <Text style={[styles.bookButtonText, { color: colors.surface }]}>Book Now</Text>
+          <Text style={[styles.bookButtonText, { color: colors.surface }]}>{isRented ? "Rented" : "Book Now"}</Text>
         </TouchableOpacity>
         {isLandlord && (
           <Text style={[styles.disabledNotice, { color: colors.textSecondary }]}>Landlords cannot book properties.</Text>
+        )}
+        {isRented && !isLandlord && (
+          <Text style={[styles.disabledNotice, { color: colors.textSecondary }]}>This property is already rented.</Text>
         )}
       </View>
     </View>

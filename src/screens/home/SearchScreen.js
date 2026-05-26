@@ -7,7 +7,7 @@ import { getCategories } from "../../api/categoryApi";
 import { getPrimaryImageUrl } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
 
-const defaultPropertyTypes = [{ name: "All Types", slug: "All Types" }];
+const defaultPropertyTypes = [{ name: "All Types", value: "All Types" }];
 
 export default function SearchScreen({ navigation }) {
   const [minPrice, setMinPrice] = useState("");
@@ -28,32 +28,27 @@ export default function SearchScreen({ navigation }) {
   };
 
   const debounceRef = useRef(null);
-  const lastQueryKey = useRef(null);
 
-  const loadProperties = async (params = {}) => {
-    setLoading(true);
+  const loadProperties = useCallback(async (params = {}) => {
     try {
-      const key = JSON.stringify(params || {});
-      if (lastQueryKey.current === key) {
-        setLoading(false);
-        return;
-      }
-      lastQueryKey.current = key;
-      console.log("Selected property type:", selectedType);
+      setLoading(true);
+      setProperties([]);
+      console.log("loadProperties called with params:", params);
       const response = await getProperties(params);
-      console.log("Fetched search listings:", response.data);
-      setProperties(normalizeList(response.data));
+      const list = normalizeList(response.data);
+      console.log("Fetched properties count:", list.length, "Sample:", list[0]);
+      setProperties(list);
     } catch (error) {
       console.error("Failed to load properties", error);
       setProperties([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadProperties();
-  }, []);
+  }, [loadProperties]);
 
   useEffect(() => {
     const fetchTypes = async () => {
@@ -61,10 +56,10 @@ export default function SearchScreen({ navigation }) {
         const response = await getCategories();
         const data = Array.isArray(response.data) ? response.data : [];
         setPropertyTypes([
-          { name: "All Types", slug: "All Types" },
+          { name: "All Types", value: "All Types" },
           ...data.map((category) => ({
             name: category.name || category.title || "Unknown",
-            slug: category.slug || String(category.name || category.title || "").toLowerCase().replace(/\s+/g, "-"),
+            value: category.name || category.title || "Unknown", // Use actual category name for filtering
           })),
         ]);
       } catch (error) {
@@ -74,31 +69,93 @@ export default function SearchScreen({ navigation }) {
     fetchTypes();
   }, []);
 
-  // When filters change, debounce and fetch from backend using supported query params
+  // When filters change, debounce and fetch from backend
   useEffect(() => {
-    const params = {};
-    if (location?.trim()) {
-      params.city = location.trim();
-      // also use as general search keyword for partial matches
-      params.search = location.trim();
-    }
-    if (selectedType && selectedType !== "All Types") params.category = selectedType;
-    if (minPrice) params.min_price = minPrice;
-    if (maxPrice) params.max_price = maxPrice;
-
-    // clear stale results while loading
-    setProperties([]);
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    
     debounceRef.current = setTimeout(() => {
+      const params = {};
+      
+      // Only location is sent to backend for search
+      if (location?.trim()) {
+        params.search = location.trim();
+      }
+      
+      // Price filters are sent to backend
+      if (minPrice) params.min_price = minPrice;
+      if (maxPrice) params.max_price = maxPrice;
+      
+      // Category is NOT sent to backend - it will be filtered client-side
+      console.log("Backend params (location & price only):", params);
+      console.log("Category filter applied client-side: selectedType=", selectedType);
+      
       loadProperties(params);
     }, 350);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [location, selectedType, minPrice, maxPrice]);
+  }, [location, selectedType, minPrice, maxPrice, loadProperties]);
 
-  const filteredProperties = useMemo(() => properties, [properties]);
+  const filteredProperties = useMemo(() => {
+    console.log("Filtering with selectedType:", selectedType);
+    console.log("Properties available:", properties.length);
+    console.log("Sample properties:", properties.slice(0, 3).map(p => ({ 
+      title: p.title, 
+      category_name: p.category_name,
+      category: p.category,
+      property_type: p.property_type,
+      type: p.type
+    })));
+
+    // If "All Types" is selected, return all properties
+    if (selectedType === "All Types") {
+      console.log("All Types selected, returning all properties");
+      return properties;
+    }
+
+    // Filter based on category with normalization
+    const normalizedSelected = selectedType?.trim().toLowerCase();
+    console.log("Normalized selected type:", normalizedSelected);
+    
+    const filtered = properties.filter((item) => {
+      // Check multiple possible category fields
+      let categoryValue = null;
+      
+      // Priority 1: category_name field
+      if (item.category_name) {
+        categoryValue = String(item.category_name).trim();
+      }
+      // Priority 2: category object with name
+      else if (item.category?.name) {
+        categoryValue = String(item.category.name).trim();
+      }
+      // Priority 3: category string
+      else if (typeof item.category === 'string') {
+        categoryValue = item.category.trim();
+      }
+      // Priority 4: property_type
+      else if (item.property_type) {
+        categoryValue = String(item.property_type).trim();
+      }
+      // Priority 5: type field
+      else if (item.type) {
+        categoryValue = String(item.type).trim();
+      }
+      
+      const normalizedCategory = categoryValue?.toLowerCase();
+      const isMatch = normalizedCategory === normalizedSelected;
+      
+      if (!isMatch && item.id) {
+        console.log(`Item ${item.id}: category="${normalizedCategory}" vs selected="${normalizedSelected}" - NO MATCH`);
+      }
+      
+      return isMatch;
+    });
+
+    console.log("Filtered results count:", filtered.length);
+    return filtered;
+  }, [properties, selectedType]);
 
   const makeImageUri = (image) => {
     if (!image) return "";
@@ -109,24 +166,22 @@ export default function SearchScreen({ navigation }) {
 
   const renderPropertyCard = ({ item }) => {
     const imageUrl = getPrimaryImageUrl(item) || "";
-    const price = item.price || item.rent || 0;
+    const price = item.price_per_month ?? item.price ?? item.rent ?? 0;
     const itemLocation = item.location || item.city || item.address || "Unknown";
-    const beds = item.bedrooms || item.bedroom_count || item.beds || 0;
 
     return (
       <TouchableOpacity style={styles.resultCard} onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id, slug: item.slug } })}>
         <ImageWithFallback sourceUri={imageUrl} style={styles.resultImage} />
         <View style={styles.resultBody}>
-          <Text style={styles.resultPrice}>ETB {price.toLocaleString()}/month</Text>
+          <Text style={styles.resultPrice}>ETB {Number(price).toLocaleString()}/month</Text>
           <Text style={styles.resultLocation}>{itemLocation}</Text>
           <Text style={styles.resultTitle} numberOfLines={1}>{item.title || item.name || "Property"}</Text>
-          <Text style={styles.resultBeds}>{beds} bed{beds !== 1 ? "s" : ""}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  const ListHeader = () => (
+  const ListHeader = (
     <View>
       <View style={styles.headerRow}>
         <View>
@@ -149,7 +204,7 @@ export default function SearchScreen({ navigation }) {
               placeholderTextColor={colors.placeholder}
               keyboardType="numeric"
               value={minPrice}
-              onChangeText={setMinPrice}
+              onChangeText={(t) => setMinPrice(t)}
             />
             <Text style={styles.priceInputUnit}>ETB</Text>
           </View>
@@ -161,7 +216,7 @@ export default function SearchScreen({ navigation }) {
               placeholderTextColor={colors.placeholder}
               keyboardType="numeric"
               value={maxPrice}
-              onChangeText={setMaxPrice}
+              onChangeText={(t) => setMaxPrice(t)}
             />
             <Text style={styles.priceInputUnit}>ETB</Text>
           </View>
@@ -175,7 +230,7 @@ export default function SearchScreen({ navigation }) {
             placeholder="Enter location"
             placeholderTextColor={colors.placeholder}
             value={location}
-            onChangeText={setLocation}
+            onChangeText={(t) => setLocation(t)}
           />
         </View>
 
@@ -183,16 +238,14 @@ export default function SearchScreen({ navigation }) {
         <View style={styles.typesRow}>
           {propertyTypes.map((type) => (
             <TouchableOpacity
-              key={type.slug}
-              style={[styles.typeButton, selectedType === type.slug && styles.typeButtonActive]}
-              onPress={() => setSelectedType(type.slug)}
+              key={type.value}
+              style={[styles.typeButton, selectedType === type.value && styles.typeButtonActive]}
+              onPress={() => { console.log("Category pressed:", type.value); setSelectedType(type.value); }}
             >
-              <Text style={[styles.typeText, selectedType === type.slug && styles.typeTextActive]}>{type.name}</Text>
+              <Text style={[styles.typeText, selectedType === type.value && styles.typeTextActive]}>{type.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
-
-        {/* Bedrooms filter removed per request */}
 
         <Text style={styles.resultsLabel}>{filteredProperties.length} Properties Found</Text>
       </View>
@@ -207,12 +260,13 @@ export default function SearchScreen({ navigation }) {
         </View>
       )}
 
+      {ListHeader}
       <FlatList
         data={filteredProperties}
-        keyExtractor={(item) => String(item.id || item._id || Math.random())}
+        keyExtractor={(item, index) => String(item.id || item._id || item.slug || index)}
         renderItem={renderPropertyCard}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 140 }]}
-        ListHeaderComponent={ListHeader}
+        contentContainerStyle={[styles.listContent, { paddingBottom: 120 }]}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<Text style={styles.emptyText}>No properties found matching your filters.</Text>}
       />
     </View>

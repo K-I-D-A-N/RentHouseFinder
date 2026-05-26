@@ -21,7 +21,7 @@ import { getCategories } from "../../api/categoryApi";
 import { getPrimaryImageUrl } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
 
-const defaultCategories = [{ name: "All", slug: "All" }];
+const defaultCategories = [{ name: "All", value: "All" }];
 
 export default function HomeScreen({ navigation }) {
   const [properties, setProperties] = useState([]);
@@ -65,7 +65,7 @@ export default function HomeScreen({ navigation }) {
       try {
         const params = {};
         if (searchQuery?.trim()) params.search = searchQuery.trim();
-        if (selectedCategory && selectedCategory !== "All") params.category = selectedCategory;
+        // Don't send category to backend - we'll filter client-side for accuracy
         await loadProperties(params);
       } catch (err) {
         console.error("Live search failed", err);
@@ -77,7 +77,7 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const params = {};
     if (searchQuery?.trim()) params.search = searchQuery.trim();
-    if (selectedCategory && selectedCategory !== "All") params.category = selectedCategory;
+    // Don't send category to backend - we'll filter client-side for accuracy
     setProperties([]);
     loadProperties(params);
   }, [selectedCategory, loadProperties]);
@@ -88,10 +88,13 @@ export default function HomeScreen({ navigation }) {
       try {
         const response = await getCategories();
         const data = Array.isArray(response.data) ? response.data : [];
-        setCategories([{ name: "All", slug: "All" }, ...data.map((category) => ({
-          name: category.name || category.title || "Unknown",
-          slug: category.slug || String(category.name || category.title || "").toLowerCase().replace(/\s+/g, "-"),
-        }))]);
+        setCategories([
+          { name: "All", value: "All" },
+          ...data.map((category) => ({
+            name: category.name || category.title || "Unknown",
+            value: category.name || category.title || "Unknown", // Use actual category name for filtering
+          })),
+        ]);
       } catch (err) {
         console.warn("Failed to load home categories", err);
       }
@@ -103,7 +106,7 @@ export default function HomeScreen({ navigation }) {
     useCallback(() => {
       const params = {};
       if (searchQuery?.trim()) params.search = searchQuery.trim();
-      if (selectedCategory && selectedCategory !== "All") params.category = selectedCategory;
+      // Don't send category to backend - we'll filter client-side for accuracy
       loadProperties(params);
     }, [loadProperties, searchQuery, selectedCategory])
   );
@@ -132,17 +135,35 @@ export default function HomeScreen({ navigation }) {
     return String(image);
   };
 
-  const filteredProperties = useMemo(() => properties, [properties]);
+  const filteredProperties = useMemo(() => {
+    // Debug log for selected category
+    console.log("Selected category:", selectedCategory);
+    
+    if (selectedCategory === "All") {
+      console.log("Filtered properties (All categories):", properties.map(i => i.category_name));
+      return properties;
+    }
+
+    // Filter based on category_name with normalization
+    const normalizedSelected = selectedCategory?.trim().toLowerCase();
+    const filtered = properties.filter(item => {
+      const normalizedCategory = item.category_name?.trim().toLowerCase();
+      return item.category_name && normalizedCategory === normalizedSelected;
+    });
+
+    console.log("Filtered properties:", filtered.map(i => i.category_name));
+    return filtered;
+  }, [properties, selectedCategory]);
 
   const renderCategory = (category) => {
-    const isActive = selectedCategory === category.slug;
+    const isActive = selectedCategory === category.value;
     return (
       <TouchableOpacity
-        key={category.slug}
+        key={category.value}
         style={[styles.categoryPill, isActive && styles.categoryPillActive]}
         onPress={() => {
           console.log("Selected category:", category);
-          setSelectedCategory(category.slug);
+          setSelectedCategory(category.value);
         }}
       >
         <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>{category.name}</Text>

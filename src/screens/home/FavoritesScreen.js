@@ -59,9 +59,6 @@ export default function FavoritesScreen({ navigation }) {
     const imageUrl = getPrimaryImageUrl(item) || "";
     const price = item.price || item.rent || 0;
     const location = item.location || item.city || item.address || "Unknown location";
-    const bedrooms = item.bedrooms || item.bedroom_count || item.beds || 0;
-    const bathrooms = item.bathrooms || item.bathroom_count || 0;
-    const area = item.area || item.size || item.square_meters || 0;
 
     return (
       <TouchableOpacity
@@ -74,20 +71,6 @@ export default function FavoritesScreen({ navigation }) {
             <Text style={styles.price}>ETB {price.toLocaleString()}/month</Text>
           </View>
           <Text style={styles.location}>{location}</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Ionicons name="bed-outline" size={16} color={colors.textSecondary} />
-              <Text style={styles.statText}>{bedrooms}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="water-outline" size={16} color={colors.textSecondary} />
-              <Text style={styles.statText}>{bathrooms}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="square-outline" size={16} color={colors.textSecondary} />
-              <Text style={styles.statText}>{area} m²</Text>
-            </View>
-          </View>
         </View>
       </TouchableOpacity>
     );
@@ -183,21 +166,6 @@ const createStyles = (colors) => StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 18,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  statItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  statText: {
-    marginLeft: 6,
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: "700",
   },
   loadingContainer: {
     flex: 1,

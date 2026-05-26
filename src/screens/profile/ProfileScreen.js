@@ -23,7 +23,15 @@ export default function ProfileScreen({ navigation }) {
   }, [user?.profile_image]);
 
   const handleListingsPress = () => {
-    navigation.navigate("MyListings");
+    if (isLandlord) {
+      navigation.navigate("MyListings");
+    } else {
+      Alert.alert(
+        "Register as Landlord",
+        "To post properties, please register as a landlord first.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   const handleBookingsPress = () => {
