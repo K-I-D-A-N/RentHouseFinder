@@ -13,6 +13,7 @@ import {
   Animated,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useTheme from "../../hooks/useTheme";
@@ -43,6 +44,7 @@ async function saveFavoriteIds(ids) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const { t } = useTranslation();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,10 +128,10 @@ export default function HomeScreen({ navigation }) {
         const response = await getCategories();
         const data = Array.isArray(response.data) ? response.data : [];
         setCategories([
-          { name: "All", value: "All" },
+          { name: t("home.allCategories"), value: "All" },
           ...data.map((category) => ({
-            name: category.name || category.title || "Unknown",
-            value: category.name || category.title || "Unknown",
+            name: category.name || category.title || t("common.unknown"),
+            value: category.name || category.title || t("common.unknown"),
           })),
         ]);
       } catch (err) {
@@ -178,7 +180,7 @@ export default function HomeScreen({ navigation }) {
         onPress={() => setSelectedCategory(category.value)}
       >
         <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>
-          {category.name}
+          {category.value === "All" ? t("home.allCategories") : category.name}
         </Text>
       </TouchableOpacity>
     );
@@ -274,7 +276,7 @@ export default function HomeScreen({ navigation }) {
             activeOpacity={0.82}
           >
             <Icon name="visibility" size={16} color={colors.surface} style={styles.viewDetailsIcon} />
-            <Text style={[styles.viewDetailsText, { color: colors.surface }]}>View Details</Text>
+            <Text style={[styles.viewDetailsText, { color: colors.surface }]}>{t("home.viewDetails")}</Text>
           </TouchableOpacity>
         </View>
       </Pressable>
@@ -292,15 +294,15 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <Text style={styles.heading}>Find Your Home</Text>
-        <Text style={styles.subheading}>Search the best rentals in Addis Ababa</Text>
+        <Text style={styles.heading}>{t("home.heading")}</Text>
+        <Text style={styles.subheading}>{t("home.subheading")}</Text>
       </View>
 
       <View style={styles.searchSection}>
         <View style={styles.searchInputContainer}>
           <Icon name="search" size={22} color="#b0b0b0" style={styles.searchIcon} />
           <TextInput
-            placeholder="Search by location..."
+            placeholder={t("home.searchPlaceholder")}
             placeholderTextColor="#999"
             style={styles.searchInput}
             value={searchQuery}
@@ -334,8 +336,8 @@ export default function HomeScreen({ navigation }) {
         ListEmptyComponent={
           <Text style={styles.emptyText}>
             {selectedCategory !== "All"
-              ? "No listings found for this category."
-              : "No properties found."}
+              ? t("home.noListings")
+              : t("home.noProperties")}
           </Text>
         }
       />

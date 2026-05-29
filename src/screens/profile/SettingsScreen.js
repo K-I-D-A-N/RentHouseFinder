@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert, Linking, Platform } from "react-native";
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert, Linking, Platform, ActivityIndicator } from "react-native";
 import * as Notifications from "expo-notifications";
+import { useTranslation } from "react-i18next";
+import { saveLanguage } from "../../i18n/i18n";
 import useTheme from "../../hooks/useTheme";
+import useAuth from "../../hooks/useAuth";
+import { deleteCurrentUser } from "../../api/userApi";
 
 export default function SettingsScreen() {
+  const { t, i18n } = useTranslation();
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
+  const { logout } = useAuth();
   const [notifications, setNotifications] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(true);
-  const [language, setLanguage] = useState("English");
+  const [language, setLanguage] = useState(i18n.language || "en");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const loadNotificationPermission = async () => {
@@ -22,8 +29,9 @@ export default function SettingsScreen() {
       }
     };
 
+    setLanguage(i18n.language || "en");
     loadNotificationPermission();
-  }, []);
+  }, [i18n.language]);
 
   const openAppSettings = async () => {
     try {
@@ -41,43 +49,84 @@ export default function SettingsScreen() {
         setNotifications(enabled);
         if (!enabled) {
           Alert.alert(
-            "Notifications denied",
-            "Please allow notifications in your device settings.",
+            t("settings.notifications.deniedAlert.title"),
+            t("settings.notifications.deniedAlert.message"),
             [
-              { text: "Cancel", style: "cancel" },
-              { text: "Open Settings", onPress: openAppSettings },
+              { text: t("settings.notifications.deniedAlert.cancel"), style: "cancel" },
+              { text: t("settings.notifications.deniedAlert.openSettings"), onPress: openAppSettings },
             ]
           );
         }
       } catch (error) {
         console.error("Notification request error:", error);
-        Alert.alert("Notifications", "Unable to request notification permission.");
+        Alert.alert(t("settings.notifications.title"), t("settings.notifications.requestError"));
         setNotifications(false);
       }
     } else {
       setNotifications(false);
       Alert.alert(
-        "Notifications disabled",
+        t("settings.notifications.disabledAlert.title"),
         Platform.select({
-          ios: "You can re-enable notifications from the device settings.",
-          android: "Disable notifications from app settings if you want to stop alerts.",
+          ios: t("settings.notifications.disabledAlert.ios"),
+          android: t("settings.notifications.disabledAlert.android"),
         })
       );
     }
+  };
+
+  const changeLanguage = async (lang) => {
+    try {
+      await i18n.changeLanguage(lang);
+      setLanguage(lang);
+      await saveLanguage(lang);
+    } catch (error) {
+      console.error("Failed to change language", error);
+    }
+  };
+
+  const deleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteCurrentUser();
+      await logout();
+      Alert.alert("Account deleted", "Your account has been deleted successfully.");
+    } catch (error) {
+      console.error("Delete account failed:", error?.response || error);
+      const message =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.response?.data ||
+        error.message ||
+        "Failed to delete account. Please try again.";
+      Alert.alert("Failed to delete account", typeof message === "string" ? message : JSON.stringify(message));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently deactivate your account? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: deleteAccount },
+      ]
+    );
   };
 
   const styles = createStyles(colors);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Manage your preferences and app experience.</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{t("settings.title")}</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t("settings.subtitle")}</Text>
 
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <View style={styles.row}>
           <View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Notifications</Text>
-            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Receive booking and new listing alerts.</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{t("settings.notifications.title")}</Text>
+            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>{t("settings.notifications.subtitle")}</Text>
           </View>
           <Switch
             value={notifications}
@@ -87,14 +136,14 @@ export default function SettingsScreen() {
             trackColor={{ false: "#d1d1d6", true: "#ffd9b5" }}
           />
         </View>
-        <Text style={[styles.permissionHint, { color: colors.textSecondary }]}>Status: {notificationLoading ? "Checking permissions..." : notifications ? "Allowed" : "Denied"}</Text>
+        <Text style={[styles.permissionHint, { color: colors.textSecondary }]}> {t("settings.notifications.status")}: {notificationLoading ? t("settings.notifications.checking") : notifications ? t("settings.notifications.allowed") : t("settings.notifications.denied")} </Text>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Dark Mode</Text>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Switch the app theme to dark mode.</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>{t("settings.darkMode.title")}</Text>
+        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>{t("settings.darkMode.subtitle")}</Text>
         <View style={styles.row}> 
-          <Text style={[styles.cardSubtitle, { color: colors.text }]}>Enable dark theme</Text>
+          <Text style={[styles.cardSubtitle, { color: colors.text }]}>{t("settings.darkMode.enable")}</Text>
           <Switch
             value={isDarkMode}
             onValueChange={toggleDarkMode}
@@ -105,30 +154,50 @@ export default function SettingsScreen() {
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Language</Text>
-        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>Current selection</Text>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>{t("settings.language.title")}</Text>
+        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>{t("settings.language.subtitle")}</Text>
         <View style={styles.languageRow}>
           <TouchableOpacity 
             style={[
               styles.languageChip, 
               { backgroundColor: colors.soft },
-              language === "English" && styles.languageChipActive,
+              language === "en" && styles.languageChipActive,
             ]} 
-            onPress={() => setLanguage("English")}
+            onPress={() => changeLanguage("en")}
           > 
-            <Text style={[styles.languageText, language === "English" && styles.languageTextActive]}>English</Text>
+            <Text style={[styles.languageText, language === "en" && styles.languageTextActive]}>{t("settings.language.english")}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[
               styles.languageChip, 
               { backgroundColor: colors.soft },
-              language === "Amharic" && styles.languageChipActive,
+              language === "am" && styles.languageChipActive,
             ]} 
-            onPress={() => setLanguage("Amharic")}
+            onPress={() => changeLanguage("am")}
           > 
-            <Text style={[styles.languageText, language === "Amharic" && styles.languageTextActive]}>Amharic</Text>
+            <Text style={[styles.languageText, language === "am" && styles.languageTextActive]}>{t("settings.language.amharic")}</Text>
           </TouchableOpacity>
         </View>
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+        <Text style={[styles.cardTitle, { color: colors.text }]}>{"Delete Account"}</Text>
+        <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>{"Permanently deactivate your account and clear your session."}</Text>
+        <TouchableOpacity
+          style={[
+            styles.deleteButton,
+            { backgroundColor: "#d32f2f" },
+            isDeleting && styles.disabledButton,
+          ]}
+          onPress={confirmDeleteAccount}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.deleteButtonText}>{"Delete Account"}</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -211,5 +280,20 @@ const createStyles = (colors) => StyleSheet.create({
     marginTop: 10,
     fontSize: 13,
     lineHeight: 18,
+  },
+  deleteButton: {
+    marginTop: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteButtonText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#ffffff",
+  },
+  disabledButton: {
+    opacity: 0.65,
   },
 });

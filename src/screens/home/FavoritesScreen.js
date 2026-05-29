@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -33,6 +34,7 @@ async function saveFavoriteIds(ids) {
 }
 
 export default function FavoritesScreen({ navigation }) {
+  const { t } = useTranslation();
   const [allProperties, setAllProperties] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [loading, setLoading] = useState(false);
@@ -92,8 +94,8 @@ export default function FavoritesScreen({ navigation }) {
     const itemId = String(item.id || item._id || item.pk || "");
     const isFavorited = favoriteIds.has(itemId);
     const price = item.price_per_month || item.price_per_week || item.price_per_day || item.price || 0;
-    const priceUnit = item.price_per_month ? "month" : item.price_per_week ? "week" : "day";
-    const location = item.location || item.city || item.address || "Unknown location";
+    const priceUnit = item.price_per_month ? t("favorites.month") : item.price_per_week ? t("favorites.week") : t("favorites.day");
+    const location = item.location || item.city || item.address || t("propertyDetail.locationUnavailable") || "Unknown location";
     const title = item.title || item.name || "";
 
     return (
@@ -139,14 +141,14 @@ export default function FavoritesScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Favorites</Text>
-        <Text style={styles.subtitle}>{favorites.length} saved properties</Text>
+        <Text style={styles.title}>{t("favorites.title")}</Text>
+        <Text style={styles.subtitle}>{t("favorites.subtitle", { count: favorites.length })}</Text>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading favorites...</Text>
+          <Text style={styles.loadingText}>{t("favorites.loading")}</Text>
         </View>
       ) : (
         <FlatList
@@ -157,7 +159,7 @@ export default function FavoritesScreen({ navigation }) {
           contentContainerStyle={styles.list}
           renderItem={renderItem}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No saved properties yet.</Text>
+            <Text style={styles.emptyText}>{t("favorites.empty")}</Text>
           }
         />
       )}

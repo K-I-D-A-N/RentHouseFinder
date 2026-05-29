@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { useTranslation } from "react-i18next";
 import useAuth from "../../hooks/useAuth";
 import useTheme from "../../hooks/useTheme";
 
 export default function LoginScreen({ navigation }) {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const { colors } = useTheme();
   const [email, setEmail] = useState("");
@@ -16,7 +18,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Validation", "Please enter both email and password.");
+      Alert.alert(t("login.validation.title"), t("login.validation.message"));
       return;
     }
     setLoading(true);
@@ -28,7 +30,7 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       console.log("LOGIN ERROR:", error.response?.data || error.message);
       Alert.alert(
-        "Login Failed",
+        t("login.error.title"),
         typeof error.response?.data === "string"
           ? error.response?.data
           : JSON.stringify(error.response?.data || error.message)
@@ -42,16 +44,16 @@ export default function LoginScreen({ navigation }) {
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.appName}>Rent House Finder</Text>
-          <Text style={styles.subtitle}>Find your perfect home in Addis Ababa</Text>
+          <Text style={styles.appName}>{t("login.appName")}</Text>
+          <Text style={styles.subtitle}>{t("login.subtitle")}</Text>
         </View>
         <View style={styles.card}>
-          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.title}>{t("login.title")}</Text>
           <View style={styles.inputContainer}>
             <Icon name="email" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder={t("login.emailPlaceholder")}
               placeholderTextColor={colors.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -63,7 +65,7 @@ export default function LoginScreen({ navigation }) {
             <Icon name="lock" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder={t("login.passwordPlaceholder")}
               placeholderTextColor={colors.placeholder}
               secureTextEntry={!showPassword}
               value={password}
@@ -74,12 +76,12 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t("login.button")}</Text>}
           </TouchableOpacity>
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-              <Text style={styles.link}>Register</Text>
+            <Text style={styles.footerText}>{t("login.noAccount")}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Register") }>
+              <Text style={styles.link}>{t("login.register")}</Text>
             </TouchableOpacity>
           </View>
         </View>

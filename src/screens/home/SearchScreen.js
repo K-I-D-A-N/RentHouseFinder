@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Image, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
@@ -10,6 +11,7 @@ import ImageWithFallback from "../../components/ImageWithFallback";
 const defaultPropertyTypes = [{ name: "All Types", value: "All Types" }];
 
 export default function SearchScreen({ navigation }) {
+  const { t } = useTranslation();
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [location, setLocation] = useState("");
@@ -58,8 +60,8 @@ export default function SearchScreen({ navigation }) {
         setPropertyTypes([
           { name: "All Types", value: "All Types" },
           ...data.map((category) => ({
-            name: category.name || category.title || "Unknown",
-            value: category.name || category.title || "Unknown", // Use actual category name for filtering
+            name: category.name || category.title || t("common.unknown"),
+            value: category.name || category.title || t("common.unknown"), // Use actual category name for filtering
           })),
         ]);
       } catch (error) {
@@ -167,7 +169,7 @@ export default function SearchScreen({ navigation }) {
   const renderPropertyCard = ({ item }) => {
     const imageUrl = getPrimaryImageUrl(item) || "";
     const price = item.price_per_month ?? item.price ?? item.rent ?? 0;
-    const itemLocation = item.location || item.city || item.address || "Unknown";
+    const itemLocation = item.location || item.city || item.address || t("common.unknown");
 
     return (
       <TouchableOpacity style={styles.resultCard} onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id, slug: item.slug } })}>
@@ -175,7 +177,7 @@ export default function SearchScreen({ navigation }) {
         <View style={styles.resultBody}>
           <Text style={styles.resultPrice}>ETB {Number(price).toLocaleString()}/month</Text>
           <Text style={styles.resultLocation}>{itemLocation}</Text>
-          <Text style={styles.resultTitle} numberOfLines={1}>{item.title || item.name || "Property"}</Text>
+          <Text style={styles.resultTitle} numberOfLines={1}>{item.title || item.name || t("search.propertyFallback")}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -185,8 +187,8 @@ export default function SearchScreen({ navigation }) {
     <View>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.title}>Search & Filter</Text>
-          <Text style={styles.subtitle}>Find the best rental with filters.</Text>
+          <Text style={styles.title}>{t("search.title")}</Text>
+          <Text style={styles.subtitle}>{t("search.subtitle")}</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
           <Icon name="close" size={24} color={colors.textSecondary} />
@@ -194,10 +196,10 @@ export default function SearchScreen({ navigation }) {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionLabel}>Price Range</Text>
+        <Text style={styles.sectionLabel}>{t("search.priceRange")}</Text>
         <View style={styles.priceInputRow}>
           <View style={styles.priceInput}>
-            <Text style={styles.priceInputLabel}>Min Price</Text>
+            <Text style={styles.priceInputLabel}>{t("search.minPrice")}</Text>
             <TextInput
               style={styles.input}
               placeholder="0"
@@ -209,7 +211,7 @@ export default function SearchScreen({ navigation }) {
             <Text style={styles.priceInputUnit}>ETB</Text>
           </View>
           <View style={styles.priceInput}>
-            <Text style={styles.priceInputLabel}>Max Price</Text>
+            <Text style={styles.priceInputLabel}>{t("search.maxPrice")}</Text>
             <TextInput
               style={styles.input}
               placeholder="5000000"
@@ -222,19 +224,19 @@ export default function SearchScreen({ navigation }) {
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>Location</Text>
+        <Text style={styles.sectionLabel}>{t("search.location")}</Text>
         <View style={styles.searchBox}>
           <Icon name="location-on" size={20} color={colors.placeholder} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Enter location"
+            placeholder={t("search.locationPlaceholder")}
             placeholderTextColor={colors.placeholder}
             value={location}
             onChangeText={(t) => setLocation(t)}
           />
         </View>
 
-        <Text style={styles.sectionLabel}>Property Type</Text>
+        <Text style={styles.sectionLabel}>{t("search.propertyType")}</Text>
         <View style={styles.typesRow}>
           {propertyTypes.map((type) => (
             <TouchableOpacity
@@ -242,12 +244,12 @@ export default function SearchScreen({ navigation }) {
               style={[styles.typeButton, selectedType === type.value && styles.typeButtonActive]}
               onPress={() => { console.log("Category pressed:", type.value); setSelectedType(type.value); }}
             >
-              <Text style={[styles.typeText, selectedType === type.value && styles.typeTextActive]}>{type.name}</Text>
+              <Text style={[styles.typeText, selectedType === type.value && styles.typeTextActive]}>{type.value === "All Types" ? t("search.allTypes") : type.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.resultsLabel}>{filteredProperties.length} Properties Found</Text>
+        <Text style={styles.resultsLabel}>{t("search.propertiesFound", { count: filteredProperties.length })}</Text>
       </View>
     </View>
   );
@@ -267,7 +269,7 @@ export default function SearchScreen({ navigation }) {
         renderItem={renderPropertyCard}
         contentContainerStyle={[styles.listContent, { paddingBottom: 120 }]}
         keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={<Text style={styles.emptyText}>No properties found matching your filters.</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>{t("search.noProperties")}</Text>}
       />
     </View>
   );

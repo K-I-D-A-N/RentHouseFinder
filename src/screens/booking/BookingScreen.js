@@ -10,6 +10,7 @@ import {
   Image,
   TextInput,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import useTheme from "../../hooks/useTheme";
 import { createBooking } from "../../api/bookingApi";
 import { getPropertyById } from "../../api/propertyApi";
@@ -38,6 +39,7 @@ const parseInputDate = (value) => {
 };
 
 export default function BookingScreen({ route, navigation }) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { listingId, pricePerDay: routePricePerDay, title: routeTitle, image: routeImage } = route.params || {};
 
@@ -71,7 +73,7 @@ export default function BookingScreen({ route, navigation }) {
   }, [listingId]);
 
   const effectivePricePerDay = Number(routePricePerDay ?? property?.price_per_day ?? property?.price ?? 0);
-  const effectiveTitle = routeTitle || property?.title || property?.name || "Property";
+  const effectiveTitle = routeTitle || property?.title || property?.name || t("payment.property");
 
   useEffect(() => {
     if (!startDate || !endDate) {
@@ -85,7 +87,7 @@ export default function BookingScreen({ route, navigation }) {
     if (diff <= 0) {
       setTotalDays(0);
       setTotalPrice(0);
-      setDateError("End date must be after start date");
+      setDateError(t("booking.dateRangeError"));
       return;
     }
 
@@ -108,19 +110,19 @@ export default function BookingScreen({ route, navigation }) {
 
   const startDateString = startDate ? formatDate(startDate) : startInput;
   const endDateString = endDate ? formatDate(endDate) : endInput;
-  const startInputError = startInput && !startDate ? "Date must be YYYY-MM-DD" : "";
-  const endInputError = endInput && !endDate ? "Date must be YYYY-MM-DD" : "";
+  const startInputError = startInput && !startDate ? t("booking.dateFormatError") : "";
+  const endInputError = endInput && !endDate ? t("booking.dateFormatError") : "";
 
   const canSubmit = Boolean(listingId && startDate && endDate && totalDays > 0 && !loading && !dateError);
 
   const handleBooking = async () => {
     if (!listingId) {
-      Alert.alert("Error", "Listing ID is missing. Please select a property again.");
+      Alert.alert(t("booking.error.title"), t("booking.validation.missingId"));
       return;
     }
 
     if (!startDate || !endDate || totalDays <= 0) {
-      Alert.alert("Validation", "Please choose valid booking dates.");
+      Alert.alert(t("booking.error.title"), t("booking.validation.invalidDates"));
       return;
     }
 
@@ -132,13 +134,13 @@ export default function BookingScreen({ route, navigation }) {
         end_date: formatDate(endDate),
         note: "",
       });
-      Alert.alert("Success", "Your booking is pending approval", [
-        { text: "OK", onPress: () => navigation.navigate("Profile", { screen: "MyBookings" }) },
+      Alert.alert(t("booking.success.title"), t("booking.success.message"), [
+        { text: t("booking.success.ok"), onPress: () => navigation.navigate("Profile", { screen: "MyBookings" }) },
       ]);
     } catch (error) {
       console.error("Booking failed", error.response?.data || error.message || error);
-      const message = error.response?.data?.detail || error.message || "Failed to create booking. Please try again.";
-      Alert.alert("Error", typeof message === "string" ? message : "Failed to create booking. Please try again.");
+      const message = error.response?.data?.detail || error.message || t("booking.error.title");
+      Alert.alert(t("booking.error.title"), typeof message === "string" ? message : t("booking.error.title"));
     } finally {
       setLoading(false);
     }
@@ -147,7 +149,7 @@ export default function BookingScreen({ route, navigation }) {
   if (!listingId) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}> 
-        <Text style={[styles.emptyText, { color: colors.text }]}>Invalid booking request. Please select a property from the list.</Text>
+        <Text style={[styles.emptyText, { color: colors.text }]}>{t("booking.invalidRequest")}</Text>
       </View>
     );
   }
@@ -155,27 +157,27 @@ export default function BookingScreen({ route, navigation }) {
   return (
     <View style={[styles.outerContainer, { backgroundColor: colors.background }]}> 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.heading, { color: colors.text }]}>Confirm booking</Text>
+        <Text style={[styles.heading, { color: colors.text }]}>{t("booking.title")}</Text>
 
         <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
           <ImageWithFallback sourceUri={imageUri} style={styles.summaryImage} />
           <View style={styles.summaryDetails}>
             <Text style={[styles.summaryTitle, { color: colors.text }]} numberOfLines={2}>{effectiveTitle}</Text>
-            <Text style={[styles.summaryPrice, { color: colors.primary }]}>{`ETB ${Number(effectivePricePerDay || 0).toLocaleString()} / day`}</Text>
+            <Text style={[styles.summaryPrice, { color: colors.primary }]}>{`ETB ${Number(effectivePricePerDay || 0).toLocaleString()} ${t("booking.perDaySuffix")}`}</Text>
             {propertyLoading && (
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading listing details…</Text>
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t("booking.loadingDetails")}</Text>
             )}
           </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Booking dates</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("booking.bookingDates")}</Text>
 
           <View style={[styles.dateInput, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}> 
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Start Date</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>{t("booking.startDate")}</Text>
             <TextInput
               style={[styles.input, { color: colors.text }]}
-              placeholder="YYYY-MM-DD"
+              placeholder={t("booking.datePlaceholder")}
               placeholderTextColor={colors.placeholder}
               value={startInput}
               onChangeText={setStartDateFromString}
@@ -185,10 +187,10 @@ export default function BookingScreen({ route, navigation }) {
           </View>
 
           <View style={[styles.dateInput, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}> 
-            <Text style={[styles.inputLabel, { color: colors.text }]}>End Date</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>{t("booking.endDate")}</Text>
             <TextInput
               style={[styles.input, { color: colors.text }]}
-              placeholder="YYYY-MM-DD"
+              placeholder={t("booking.datePlaceholder")}
               placeholderTextColor={colors.placeholder}
               value={endInput}
               onChangeText={setEndDateFromString}
@@ -201,17 +203,17 @@ export default function BookingScreen({ route, navigation }) {
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Price summary</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t("booking.priceSummary")}</Text>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Total days</Text>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t("booking.totalDays")}</Text>
             <Text style={[styles.detailValue, { color: colors.text }]}>{totalDays || "-"}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Price per day</Text>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t("booking.pricePerDay")}</Text>
             <Text style={[styles.detailValue, { color: colors.text }]}>{`ETB ${Number(effectivePricePerDay || 0).toLocaleString()}`}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Total price</Text>
+            <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t("booking.totalPrice")}</Text>
             <Text style={[styles.totalAmount, { color: colors.primary }]}>{`ETB ${totalPrice.toLocaleString()}`}</Text>
           </View>
         </View>
@@ -231,7 +233,7 @@ export default function BookingScreen({ route, navigation }) {
           {loading ? (
             <ActivityIndicator color={canSubmit ? colors.surface : colors.textSecondary} />
           ) : (
-            <Text style={[styles.submitText, { color: canSubmit ? colors.surface : colors.textSecondary }]}>Book Now</Text>
+            <Text style={[styles.submitText, { color: canSubmit ? colors.surface : colors.textSecondary }]}>{t("booking.bookNow")}</Text>
           )}
         </TouchableOpacity>
 

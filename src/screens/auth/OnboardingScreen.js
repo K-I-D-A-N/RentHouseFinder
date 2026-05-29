@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import useAuth from "../../hooks/useAuth";
 import useTheme from "../../hooks/useTheme";
 
@@ -9,28 +10,29 @@ const { width } = Dimensions.get("window");
 const slides = [
   {
     icon: "search-outline",
-    title: "Find Houses Easily",
-    description: "Search through thousands of properties in Addis Ababa with our smart search.",
+    titleKey: "onboarding.slides.0.title",
+    descriptionKey: "onboarding.slides.0.description",
   },
   {
     icon: "funnel-outline",
-    title: "Filter by Your Needs",
-    description: "Filter properties by price, location, number of rooms, and more.",
+    titleKey: "onboarding.slides.1.title",
+    descriptionKey: "onboarding.slides.1.description",
   },
   {
     icon: "home-outline",
-    title: "Post Your Property",
-    description: "List your house for rent or sale and reach thousands of potential buyers.",
+    titleKey: "onboarding.slides.2.title",
+    descriptionKey: "onboarding.slides.2.description",
   },
 ];
 
 const finalSlide = {
   icon: "arrow-forward-circle-outline",
-  title: "Ready to continue",
-  description: "Swipe once more to login and begin your search.",
+  titleKey: "onboarding.finalSlide.title",
+  descriptionKey: "onboarding.finalSlide.description",
 };
 
 export default function OnboardingScreen({ navigation }) {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
   const { token, markOnboardingSeen } = useAuth();
   const finishRoute = token ? "Main" : "Auth";
@@ -71,7 +73,7 @@ export default function OnboardingScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.topRow}>
         <TouchableOpacity onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
+          <Text style={styles.skipText}>{t("onboarding.skip")}</Text>
         </TouchableOpacity>
       </View>
       <ScrollView
@@ -87,8 +89,8 @@ export default function OnboardingScreen({ navigation }) {
               <View style={styles.iconBox}>
                 <Ionicons name={slideItem.icon} size={42} color={colors.primary} />
               </View>
-              <Text style={styles.title}>{slideItem.title}</Text>
-              <Text style={styles.description}>{slideItem.description}</Text>
+              <Text style={styles.title}>{t(slideItem.titleKey)}</Text>
+              <Text style={styles.description}>{t(slideItem.descriptionKey)}</Text>
             </View>
           </View>
         ))}

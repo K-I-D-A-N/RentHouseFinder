@@ -12,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { useRoute, useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import useTheme from "../../hooks/useTheme";
 import { initiatePayment, getPaymentByBooking, verifyPaymentByTxRef } from "../../api/paymentApi";
 import { getListingBySlug } from "../../api/listingApi";
@@ -23,11 +24,11 @@ import ImageWithFallback from "../../components/ImageWithFallback";
 // Status config — single source of truth for colors and labels
 // ---------------------------------------------------------------------------
 const STATUS_CONFIG = {
-  pending:   { bg: "#fef3c7", text: "#92400e", dot: "#f59e0b", label: "Pending"   },
-  approved:  { bg: "#dcfce7", text: "#14532d", dot: "#22c55e", label: "Approved"  },
-  rejected:  { bg: "#fee2e2", text: "#7f1d1d", dot: "#ef4444", label: "Rejected"  },
-  completed: { bg: "#dbeafe", text: "#1e3a5f", dot: "#2563eb", label: "Completed" },
-  paid:      { bg: "#dbeafe", text: "#1e3a5f", dot: "#2563eb", label: "Paid"      },
+  pending:   { bg: "#fef3c7", text: "#92400e", dot: "#f59e0b", label: "payment.status.pending"   },
+  approved:  { bg: "#dcfce7", text: "#14532d", dot: "#22c55e", label: "payment.status.approved"  },
+  rejected:  { bg: "#fee2e2", text: "#7f1d1d", dot: "#ef4444", label: "payment.status.rejected"  },
+  completed: { bg: "#dbeafe", text: "#1e3a5f", dot: "#2563eb", label: "payment.status.completed" },
+  paid:      { bg: "#dbeafe", text: "#1e3a5f", dot: "#2563eb", label: "payment.status.paid"      },
 };
 const getStatusConfig = (key) => STATUS_CONFIG[key] || { bg: "#f3f4f6", text: "#6b7280", dot: "#9ca3af", label: key || "—" };
 
@@ -67,6 +68,7 @@ const sectionStyles = StyleSheet.create({
 });
 
 export default function PaymentScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const route = useRoute();
   const [loading, setLoading]                   = useState(true);
@@ -94,7 +96,7 @@ export default function PaymentScreen() {
         booking?.id;
 
       if (!listingKey) {
-        setError("Missing listing information.");
+        setError(t("payment.noData"));
         setLoading(false);
         return;
       }
@@ -105,7 +107,7 @@ export default function PaymentScreen() {
         if (isMounted) setListing(res.data);
       } catch (err) {
         if (isMounted)
-          setError(err.response?.data?.detail || err.message || "Failed to load property details.");
+          setError(err.response?.data?.detail || err.message || t("payment.noData"));
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -138,16 +140,16 @@ export default function PaymentScreen() {
       const { checkout_url } = paymentData;
       if (checkout_url) {
         Linking.openURL(checkout_url);
-        Alert.alert("Continue Payment", "Complete your payment in the opened window. After payment, return to this app.");
+        Alert.alert(t("payment.payAlert.continueTitle"), t("payment.payAlert.continueMessage"));
       } else if (["paid", "completed"].includes(paymentData?.status?.toLowerCase())) {
-        Alert.alert("Payment Complete", "Your payment is already marked complete.");
+        Alert.alert(t("payment.payAlert.completeTitle"), t("payment.payAlert.completeMessage"));
       } else {
         throw new Error("No checkout URL returned");
       }
     } catch (error) {
-      const errMsg = error.response?.data?.detail || error.message || "Payment failed";
+      const errMsg = error.response?.data?.detail || error.message || t("payment.payAlert.failedTitle");
       setError(errMsg);
-      Alert.alert("Payment Failed", errMsg);
+      Alert.alert(t("payment.payAlert.failedTitle"), errMsg);
     } finally {
       setPaymentLoading(false);
     }
@@ -156,7 +158,7 @@ export default function PaymentScreen() {
   // --- Verify handler (unchanged logic) ---
   const handleVerifyPayment = async () => {
     if (!payment?.transaction_ref) {
-      Alert.alert("Unable to verify", "No payment transaction reference is available yet.");
+      Alert.alert(t("payment.verifyAlert.noRef"), t("payment.verifyAlert.noRefMessage"));
       return;
     }
     setRefreshingPayment(true);
@@ -167,14 +169,19 @@ export default function PaymentScreen() {
       setPayment(paymentData);
       const normalizedStatus = String(paymentData?.status || "").toLowerCase();
       if (["paid", "completed"].includes(normalizedStatus)) {
-        Alert.alert("Payment Verified ✓", "Your payment is now complete.");
+        Alert.alert(t("payment.verifyAlert.verified"), t("payment.verifyAlert.verifiedMessage"));
       } else {
-        Alert.alert("Payment Status", `Current status: ${paymentData.status || "unknown"}`);
+        Alert.alert(
+        t("payment.verifyAlert.statusTitle"),
+        t("payment.verifyAlert.statusMessage", {
+          status: paymentData.status || t("payment.verifyAlert.unknown"),
+        })
+      );
       }
     } catch (err) {
       const errMsg = err.response?.data?.detail || err.message || "Unable to verify payment.";
       setError(errMsg);
-      Alert.alert("Verification Error", errMsg);
+      Alert.alert(t("payment.verifyAlert.errorTitle"), errMsg);
     } finally {
       setRefreshingPayment(false);
     }
@@ -187,7 +194,7 @@ export default function PaymentScreen() {
     return (
       <View style={styles.loadingScreen}>
         <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Loading payment details…</Text>
+        <Text style={styles.loadingText}>{t("payment.loading")}</Text>
       </View>
     );
   }
@@ -198,7 +205,7 @@ export default function PaymentScreen() {
   if (!booking) {
     return (
       <View style={styles.loadingScreen}>
-        <Text style={styles.errorBig}>No booking data found.</Text>
+        <Text style={styles.errorBig}>{t("payment.noData")}</Text>
       </View>
     );
   }
@@ -269,11 +276,11 @@ export default function PaymentScreen() {
     <View style={styles.screen}>
       {/* ── Header bar ── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Payment</Text>
+        <Text style={styles.headerTitle}>{t("payment.title")}</Text>
         <View style={[styles.statusPill, { backgroundColor: statusCfg.bg }]}>
           <View style={[styles.statusDot, { backgroundColor: statusCfg.dot }]} />
           <Text style={[styles.statusPillText, { color: statusCfg.text }]}>
-            {statusCfg.label}
+            {statusCfg.label ? t(statusCfg.label) : booking.status || "—"}
           </Text>
         </View>
       </View>
@@ -283,7 +290,7 @@ export default function PaymentScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Property card ── */}
-        <Section title="Property" icon="🏠">
+        <Section title={t("payment.property")} icon="🏠">
           <View style={styles.propertyRow}>
             {propertyImageSource ? (
               <ImageWithFallback sourceObj={propertyImageSource} style={styles.propertyThumb} />
@@ -294,7 +301,7 @@ export default function PaymentScreen() {
             )}
             <View style={styles.propertyMeta}>
               <Text style={styles.propertyTitle} numberOfLines={2}>
-                {listing?.title || "Property"}
+                {listing?.title || t("payment.property")}
               </Text>
               <Text style={styles.propertyCity}>{listing?.city || "—"}</Text>
               <View style={styles.ownerChip}>
@@ -307,13 +314,13 @@ export default function PaymentScreen() {
         </Section>
 
         {/* ── Booking details ── */}
-        <Section title="Booking Details" icon="📋">
-          <InfoRow label="Booking ID"      value={booking.id ? `…${String(booking.id).slice(-8)}` : "—"} />
-          <InfoRow label="Check-in"        value={formatDate(booking.start_date)} />
-          <InfoRow label="Check-out"       value={formatDate(booking.end_date)} />
-          <InfoRow label="Duration"        value={`${totalDays} day${totalDays !== 1 ? "s" : ""}`} />
+        <Section title={t("payment.bookingDetails")} icon="📋">
+          <InfoRow label={t("payment.bookingId")}      value={booking.id ? `…${String(booking.id).slice(-8)}` : "—"} />
+          <InfoRow label={t("payment.checkIn")}        value={formatDate(booking.start_date)} />
+          <InfoRow label={t("payment.checkOut")}       value={formatDate(booking.end_date)} />
+          <InfoRow label={t("payment.duration")}        value={`${totalDays} ${totalDays !== 1 ? t("payment.days") : t("payment.day")}`} />
           <View style={[infoRowStyles.row, { borderBottomWidth: 0 }]}>
-            <Text style={infoRowStyles.label}>Booking Status</Text>
+            <Text style={infoRowStyles.label}>{t("payment.bookingStatus")}</Text>
             <View style={[styles.inlinePill, { backgroundColor: statusCfg.bg }]}>
               <Text style={[styles.inlinePillText, { color: statusCfg.text }]}>
                 {booking.status || "—"}
@@ -323,18 +330,18 @@ export default function PaymentScreen() {
         </Section>
 
         {/* ── Payment summary ── */}
-        <Section title="Payment Summary" icon="💳">
-          <InfoRow label="Rental Cost"      value={formatETB(subtotal)} />
-          <InfoRow label="Security Deposit" value={formatETB(deposit)} />
-          <InfoRow label="Platform Fee"     value={formatETB(commission)} />
+        <Section title={t("payment.paymentSummary")} icon="💳">
+          <InfoRow label={t("payment.rentalCost")}      value={formatETB(subtotal)} />
+          <InfoRow label={t("payment.securityDeposit")} value={formatETB(deposit)} />
+          <InfoRow label={t("payment.platformFee")}     value={formatETB(commission)} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Due</Text>
+            <Text style={styles.totalLabel}>{t("payment.totalDue")}</Text>
             <Text style={styles.totalValue}>{formatETB(total)}</Text>
           </View>
         </Section>
 
         {/* ── Payment method ── */}
-        <Section title="Payment Method" icon="🔐">
+        <Section title={t("payment.paymentMethod")} icon="🔐">
           <View style={styles.chapaRow}>
             <Image
               source={require("../../../assets/images/chapa-logo.jpg")}
@@ -342,16 +349,16 @@ export default function PaymentScreen() {
               resizeMode="contain"
             />
             <View style={styles.chapaInfo}>
-              <Text style={styles.chapaTitle}>Chapa</Text>
-              <Text style={styles.chapaSub}>Secure Ethiopian payment gateway</Text>
+              <Text style={styles.chapaTitle}>{t("payment.chapaTitle")}</Text>
+              <Text style={styles.chapaSub}>{t("payment.chapaSub")}</Text>
             </View>
             <View style={styles.secureTag}>
-              <Text style={styles.secureTagText}>🔒 Secure</Text>
+              <Text style={styles.secureTagText}>🔒 {t("payment.secure")}</Text>
             </View>
           </View>
           <View style={styles.protectionBanner}>
             <Text style={styles.protectionText}>
-              🛡️  Your payment is held securely by BetRent until check-in is confirmed.
+              🛡️  {t("payment.protection")}
             </Text>
           </View>
         </Section>
@@ -360,27 +367,25 @@ export default function PaymentScreen() {
         {bookingStatus === "pending" && (
           <View style={[styles.banner, styles.bannerWarning]}>
             <Text style={styles.bannerIcon}>⏳</Text>
-            <Text style={styles.bannerText}>Waiting for landlord approval</Text>
+            <Text style={styles.bannerText}>{t("payment.pendingBanner")}</Text>
           </View>
         )}
         {bookingStatus === "rejected" && (
           <View style={[styles.banner, styles.bannerDanger]}>
             <Text style={styles.bannerIcon}>✖</Text>
-            <Text style={styles.bannerText}>Booking rejected by the landlord</Text>
+            <Text style={styles.bannerText}>{t("payment.rejectedBanner")}</Text>
           </View>
         )}
         {isPaid && (
           <View style={[styles.banner, styles.bannerSuccess]}>
             <Text style={styles.bannerIcon}>✓</Text>
-            <Text style={styles.bannerText}>Payment successful — enjoy your stay!</Text>
+            <Text style={styles.bannerText}>{t("payment.successBanner")}</Text>
           </View>
         )}
         {bookingStatus === "approved" && !isPaid && (
           <View style={[styles.banner, styles.bannerInfo]}>
             <Text style={styles.bannerIcon}>ℹ</Text>
-            <Text style={styles.bannerText}>
-              Booking approved — complete payment to confirm your stay.
-            </Text>
+            <Text style={styles.bannerText}>{t("payment.approvedBanner")}</Text>
           </View>
         )}
 
@@ -403,8 +408,8 @@ export default function PaymentScreen() {
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Text style={styles.primaryButtonText}>Continue to Chapa Payment</Text>
-                <Text style={styles.primaryButtonSub}>You will be redirected securely</Text>
+                <Text style={styles.primaryButtonText}>{t("payment.continueButton")}</Text>
+                <Text style={styles.primaryButtonSub}>{t("payment.continueSubtitle")}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -420,7 +425,7 @@ export default function PaymentScreen() {
             {refreshingPayment ? (
               <ActivityIndicator color="#2563eb" />
             ) : (
-              <Text style={styles.secondaryButtonText}>↻  Refresh Payment Status</Text>
+              <Text style={styles.secondaryButtonText}>{t("payment.refreshButton")}</Text>
             )}
           </TouchableOpacity>
         )}

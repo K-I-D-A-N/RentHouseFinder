@@ -12,6 +12,7 @@ import {
   Pressable,
   Animated,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../../hooks/useTheme";
 import useAuth from "../../hooks/useAuth";
@@ -22,6 +23,7 @@ import { getPrimaryImageUrl } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
 
 export default function MyListingsScreen({ navigation }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("listings"); // "listings" | "requests"
   const [properties, setProperties] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -46,7 +48,7 @@ export default function MyListingsScreen({ navigation }) {
       setProperties(items);
     } catch (error) {
       console.error("Failed to load user properties", error);
-      Alert.alert("Error", "Failed to load your listings. Please try again.");
+      Alert.alert(t("myListings.delete.errorTitle"), t("myListings.delete.error"));
       setProperties([]);
     } finally {
       setLoading(false);
@@ -76,7 +78,7 @@ export default function MyListingsScreen({ navigation }) {
       setRequests(items);
     } catch (error) {
       console.error("Failed to load booking requests", error);
-      Alert.alert("Error", "Failed to load booking requests. Please try again.");
+      Alert.alert(t("myListings.delete.errorTitle"), t("myListings.delete.error"));
       setRequests([]);
     } finally {
       setLoading(false);
@@ -102,18 +104,18 @@ export default function MyListingsScreen({ navigation }) {
   // Delete property
   const handleDeleteProperty = (propertyId, propertyTitle) => {
     Alert.alert(
-      "Delete Listing",
-      `Are you sure you want to delete "${propertyTitle}"?`,
+      t("myListings.delete.title"),
+      t("myListings.delete.message", { title: propertyTitle }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("profile.imageSource.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("myListings.delete.confirm"),
           style: "destructive",
           onPress: async () => {
             try {
               await deleteProperty(propertyId);
               setProperties((prev) => prev.filter((p) => p.id !== propertyId));
-              Alert.alert("Success", "Property deleted successfully");
+              Alert.alert(t("myListings.delete.successTitle"), t("myListings.delete.success"));
               // Navigate to Home tab to refresh global listings
               try {
                 navigation.getParent()?.navigate("HomeTab", { screen: "Home" });
@@ -122,7 +124,7 @@ export default function MyListingsScreen({ navigation }) {
               }
             } catch (error) {
               console.error("Failed to delete property", error);
-              Alert.alert("Error", "Failed to delete listing. Please try again.");
+              Alert.alert(t("myListings.delete.errorTitle"), t("myListings.delete.error"));
             }
           },
         },
@@ -136,16 +138,16 @@ export default function MyListingsScreen({ navigation }) {
     try {
       if (status === "approved") {
         await updateBookingStatus(bookingId, "approved");
-        Alert.alert("Success", "Booking approved.");
+        Alert.alert(t("myListings.approve.successTitle"), t("myListings.approve.success"));
       } else {
         await updateBookingStatus(bookingId, "rejected", "Rejected by landlord");
-        Alert.alert("Success", "Booking rejected.");
+        Alert.alert(t("myListings.reject.successTitle"), t("myListings.reject.success"));
       }
       // Refresh requests
       loadRequests();
     } catch (error) {
       console.error("Failed to update booking status", error);
-      Alert.alert("Error", "Failed to update booking status. Please try again.");
+      Alert.alert(t("myListings.errorTitle"), t("myListings.updateError"));
     } finally {
       setUpdatingId(null);
     }
@@ -160,11 +162,11 @@ export default function MyListingsScreen({ navigation }) {
 
     const isVerified = item.is_verified || item.verified || false;
     // Show price: prefer per month, then week, then day
-    let priceValue = "Price unavailable";
-    if (item.price_per_month) priceValue = `${item.price_per_month.toLocaleString()} ETB / month`;
-    else if (item.price_per_week) priceValue = `${item.price_per_week.toLocaleString()} ETB / week`;
-    else if (item.price_per_day) priceValue = `${item.price_per_day.toLocaleString()} ETB / day`;
-    const badgeLabel = item.property_type || item.type || item.listing_type || "Property";
+    let priceValue = t("myListings.priceUnavailable");
+    if (item.price_per_month) priceValue = `${item.price_per_month.toLocaleString()} ETB / ${t("myListings.month")}`;
+    else if (item.price_per_week) priceValue = `${item.price_per_week.toLocaleString()} ETB / ${t("myListings.week")}`;
+    else if (item.price_per_day) priceValue = `${item.price_per_day.toLocaleString()} ETB / ${t("myListings.day")}`;
+    const badgeLabel = item.property_type || item.type || item.listing_type || t("payment.property");
     const locationText = item.location || item.city || item.address || "";
     const titleText = item.title || item.name || "";
 
@@ -179,7 +181,7 @@ export default function MyListingsScreen({ navigation }) {
         <View style={styles.badgeRow}>
           {isVerified && (
             <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedText}>Verified</Text>
+              <Text style={styles.verifiedText}>{t("myListings.verified")}</Text>
             </View>
           )}
           <View style={styles.actionButtons}>
@@ -226,7 +228,7 @@ export default function MyListingsScreen({ navigation }) {
         >
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.heading}>My Listings</Text>
+        <Text style={styles.heading}>{t("myListings.title")}</Text>
         <TouchableOpacity
           onPress={() => navigation.getParent()?.navigate("Post")}
           style={styles.addButton}
@@ -241,13 +243,13 @@ export default function MyListingsScreen({ navigation }) {
           style={[styles.tabButton, activeTab === "listings" && styles.tabButtonActive]}
           onPress={() => setActiveTab("listings")}
         >
-          <Text style={[styles.tabText, activeTab === "listings" && styles.tabTextActive]}>My Listings</Text>
+          <Text style={[styles.tabText, activeTab === "listings" && styles.tabTextActive]}>{t("myListings.tabListings")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === "requests" && styles.tabButtonActive]}
           onPress={() => setActiveTab("requests")}
         >
-          <Text style={[styles.tabText, activeTab === "requests" && styles.tabTextActive]}>Requests</Text>
+          <Text style={[styles.tabText, activeTab === "requests" && styles.tabTextActive]}>{t("myListings.tabRequests")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -260,16 +262,16 @@ export default function MyListingsScreen({ navigation }) {
         properties.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="home-outline" size={64} color={colors.textSecondary} />
-            <Text style={styles.emptyTitle}>No Listings Yet</Text>
+            <Text style={styles.emptyTitle}>{t("myListings.emptyListings.title")}</Text>
             <Text style={styles.emptyDescription}>
-              You haven't posted any properties yet. Start by creating your first listing!
+              {t("myListings.emptyListings.description")}
             </Text>
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => navigation.getParent()?.navigate("Post")}
             >
               <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.createButtonText}>Create Listing</Text>
+              <Text style={styles.createButtonText}>{t("myListings.emptyListings.button")}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -312,14 +314,14 @@ export default function MyListingsScreen({ navigation }) {
                       onPress={() => handleUpdateRequest(item.id, "approved")}
                       disabled={updatingId === item.id}
                     >
-                      <Text style={styles.actionButtonText}>Approve</Text>
+                      <Text style={styles.actionButtonText}>{t("myListings.request.approve")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.actionButton, styles.rejectButton, updatingId === item.id && styles.actionButtonDisabled]}
                       onPress={() => handleUpdateRequest(item.id, "rejected")}
                       disabled={updatingId === item.id}
                     >
-                      <Text style={styles.actionButtonText}>Reject</Text>
+                      <Text style={styles.actionButtonText}>{t("myListings.request.reject")}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -337,8 +339,8 @@ export default function MyListingsScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="mail-outline" size={64} color={colors.textSecondary} />
-              <Text style={styles.emptyTitle}>No Requests</Text>
-              <Text style={styles.emptyDescription}>No booking requests yet.</Text>
+              <Text style={styles.emptyTitle}>{t("myListings.emptyRequests.title")}</Text>
+              <Text style={styles.emptyDescription}>{t("myListings.emptyRequests.description")}</Text>
             </View>
           }
         />

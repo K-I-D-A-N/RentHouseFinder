@@ -12,12 +12,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../../hooks/useTheme";
 import { getPropertyById, updateProperty } from "../../api/propertyApi";
 import { getCategories } from "../../api/categoryApi";
 
 export default function EditListingScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const { listingId, slug, listingData } = route.params || {};
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -38,10 +40,10 @@ export default function EditListingScreen({ navigation, route }) {
   const [fetching, setFetching] = useState(false);
   // Canonical condition options (must match backend values)
   const conditionOptions = [
-    { label: "New", value: "new" },
-    { label: "Like New", value: "like_new" },
-    { label: "Good", value: "good" },
-    { label: "Fair", value: "fair" },
+    { label: t("editListing.conditions.new"), value: "new" },
+    { label: t("editListing.conditions.like_new"), value: "like_new" },
+    { label: t("editListing.conditions.good"), value: "good" },
+    { label: t("editListing.conditions.fair"), value: "fair" },
   ];
   const normalizeCondition = (val) => {
     if (!val && val !== "") return "";
@@ -73,7 +75,7 @@ export default function EditListingScreen({ navigation, route }) {
         const response = await getCategories();
         setCategories(response.data || []);
       } catch (error) {
-        Alert.alert("Error", "Failed to load categories");
+        Alert.alert(t("editListing.error.title"), t("editListing.error.loadCategories"));
       } finally {
         setCategoriesLoading(false);
       }
@@ -96,7 +98,7 @@ export default function EditListingScreen({ navigation, route }) {
           setCategoryId(d.category_id || d.category || "");
           setImages(d.images || []);
         })
-        .catch(() => Alert.alert("Error", "Failed to fetch listing details"))
+        .catch(() => Alert.alert(t("editListing.error.title"), t("editListing.error.fetchListing")))
         .finally(() => setFetching(false));
     }
   }, [listingData, slug]);
@@ -104,13 +106,13 @@ export default function EditListingScreen({ navigation, route }) {
   // Save changes
   const handleSave = async () => {
     if (!title.trim() || !description.trim() || !price || !city.trim() || !condition || !categoryId) {
-      Alert.alert("Validation", "Please fill all required fields.");
+      Alert.alert(t("editListing.validation.title"), t("editListing.validation.message"));
       return;
     }
     // Ensure condition is one of the allowed backend values
     const allowedConditions = conditionOptions.map((o) => o.value);
     if (!allowedConditions.includes(condition)) {
-      Alert.alert("Validation", "Please select a valid property condition.");
+      Alert.alert(t("editListing.validation.title"), t("editListing.validation.invalidCondition"));
       return;
     }
     setLoading(true);
@@ -124,7 +126,7 @@ export default function EditListingScreen({ navigation, route }) {
         category_id: categoryId,
       };
       await updateProperty(listingId, payload);
-      Alert.alert("Success", "Listing updated successfully!", [
+      Alert.alert(t("editListing.success.title"), t("editListing.success.message"), [
         {
           text: "OK",
           onPress: () => {
@@ -153,7 +155,7 @@ export default function EditListingScreen({ navigation, route }) {
       } else if (error.message) {
         msg = error.message;
       }
-      Alert.alert("Error", msg);
+      Alert.alert(t("editListing.error.title"), msg);
     } finally {
       setLoading(false);
     }
@@ -167,7 +169,7 @@ export default function EditListingScreen({ navigation, route }) {
       keyboardVerticalOffset={80}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.header}>Edit Listing</Text>
+        <Text style={styles.header}>{t("editListing.title")}</Text>
         {(fetching || categoriesLoading) && (
           <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 20 }} />
         )}
@@ -188,46 +190,46 @@ export default function EditListingScreen({ navigation, route }) {
           </ScrollView>
         )}
         {/* Title */}
-        <Text style={styles.label}>Title</Text>
+        <Text style={styles.label}>{t("editListing.titleLabel")}</Text>
         <TextInput
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="Title"
+          placeholder={t("editListing.titleLabel")}
           placeholderTextColor={colors.placeholder}
         />
         {/* Description */}
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>{t("editListing.description")}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={description}
           onChangeText={setDescription}
-          placeholder="Description"
+          placeholder={t("editListing.description")}
           placeholderTextColor={colors.placeholder}
           multiline
           numberOfLines={4}
         />
         {/* Price */}
-        <Text style={styles.label}>Price</Text>
+        <Text style={styles.label}>{t("editListing.price")}</Text>
         <TextInput
           style={styles.input}
           value={String(price)}
           onChangeText={setPrice}
-          placeholder="Price"
+          placeholder={t("editListing.price")}
           placeholderTextColor={colors.placeholder}
           keyboardType="numeric"
         />
         {/* City */}
-        <Text style={styles.label}>City</Text>
+        <Text style={styles.label}>{t("editListing.city")}</Text>
         <TextInput
           style={styles.input}
           value={city}
           onChangeText={setCity}
-          placeholder="City"
+          placeholder={t("editListing.city")}
           placeholderTextColor={colors.placeholder}
         />
         {/* Category */}
-        <Text style={styles.label}>Category</Text>
+        <Text style={styles.label}>{t("editListing.category")}</Text>
         <View style={styles.pickerWrapper}>
           {categoriesLoading ? (
             <ActivityIndicator size="small" color={colors.primary} />
@@ -254,7 +256,7 @@ export default function EditListingScreen({ navigation, route }) {
           )}
         </View>
         {/* Condition */}
-        <Text style={styles.label}>Condition</Text>
+        <Text style={styles.label}>{t("editListing.condition")}</Text>
         <View style={styles.pickerWrapper}>
           {conditionOptions.map((opt) => (
             <TouchableOpacity
@@ -285,7 +287,7 @@ export default function EditListingScreen({ navigation, route }) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={styles.saveButtonText}>{t("editListing.saveButton")}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

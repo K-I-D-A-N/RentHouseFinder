@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Image, FlatList, Modal, KeyboardAvoidingView, SafeAreaView, Platform } from "react-native";
+import { useTranslation } from "react-i18next";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import useTheme from "../../hooks/useTheme";
 import useAuth from "../../hooks/useAuth";
-import { createProperty, uploadListingImage } from "../../api/propertyApi";
+import { createProperty, getPropertyById, uploadListingImage } from "../../api/propertyApi";
 import { getCategories } from "../../api/categoryApi";
 
 export default function AddPropertyScreen({ navigation }) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { role } = useAuth();
   
@@ -18,10 +20,10 @@ export default function AddPropertyScreen({ navigation }) {
       <View style={[createStyles(colors).container, { justifyContent: "center", alignItems: "center" }]}>
         <Ionicons name="lock-closed" size={64} color={colors.textSecondary} />
         <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text, marginTop: 16, textAlign: "center" }}>
-          Landlord Only
+          {t("addProperty.landlordOnly.title")}
         </Text>
         <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: "center", paddingHorizontal: 20 }}>
-          Only landlord accounts can create and manage property listings.
+          {t("addProperty.landlordOnly.message")}
         </Text>
       </View>
     );
@@ -53,10 +55,10 @@ export default function AddPropertyScreen({ navigation }) {
   
   // Use only backend-accepted values for property condition (requested values)
   const conditionOptions = [
-    { label: "New", value: "new" },
-    { label: "Like New", value: "like_new" },
-    { label: "Good", value: "good" },
-    { label: "Fair", value: "fair" },
+    { label: t("addProperty.conditions.new"), value: "new" },
+    { label: t("addProperty.conditions.like_new"), value: "like_new" },
+    { label: t("addProperty.conditions.good"), value: "good" },
+    { label: t("addProperty.conditions.fair"), value: "fair" },
   ];
   
   // Fetch categories on component mount
@@ -68,7 +70,7 @@ export default function AddPropertyScreen({ navigation }) {
         setCategories(response.data || []);
       } catch (error) {
         console.error("Failed to fetch categories:", error);
-        Alert.alert("Error", "Failed to load property categories.");
+        Alert.alert(t("addProperty.error.title"), t("addProperty.error.loadCategories"));
       } finally {
         setCategoriesLoading(false);
       }
@@ -82,7 +84,7 @@ export default function AddPropertyScreen({ navigation }) {
       if (useCamera) {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (permission.status !== "granted") {
-          Alert.alert("Permission", "Camera permission is required.");
+          Alert.alert(t("addProperty.permission.title"), t("addProperty.permission.camera"));
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -93,7 +95,7 @@ export default function AddPropertyScreen({ navigation }) {
       } else {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permission.status !== "granted") {
-          Alert.alert("Permission", "Gallery permission is required.");
+          Alert.alert(t("addProperty.permission.title"), t("addProperty.permission.gallery"));
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -103,26 +105,36 @@ export default function AddPropertyScreen({ navigation }) {
       }
 
       if (!result.canceled && result.assets?.length) {
-        const newImages = result.assets.map((asset) => ({
-          uri: asset.uri,
-          id: Date.now() + Math.random(),
-        }));
+        console.log("Selected asset(s):", result.assets);
+        const newImages = result.assets.map((asset) => {
+          const uriParts = (asset.uri || "").split(".");
+          const extension = uriParts[uriParts.length - 1]?.split("?")[0]?.toLowerCase();
+          const imageType = asset.mimeType || (asset.type && asset.type.includes("/") ? asset.type : `image/${extension === "png" ? "png" : "jpeg"}`);
+          const name = asset.fileName || `property_${Date.now()}.${extension || "jpg"}`;
+          console.log("Prepared image metadata:", { uri: asset.uri, fileName: name, mimeType: imageType });
+          return {
+            uri: asset.uri,
+            id: Date.now() + Math.random(),
+            name,
+            type: imageType,
+          };
+        });
         setImages([...images, ...newImages]);
       }
     } catch (error) {
       console.error("Image picker error:", error);
-      Alert.alert("Error", "Failed to pick image.");
+      Alert.alert(t("addProperty.error.title"), t("addProperty.error.pickImage"));
     }
   };
 
   const showImageOptions = () => {
     Alert.alert(
-      "Add Property Images",
-      "Choose where to upload images from",
+      t("addProperty.imageSource.title"),
+      t("addProperty.imageSource.message"),
       [
-        { text: "Camera", onPress: () => pickImage(true) },
-        { text: "Gallery", onPress: () => pickImage(false) },
-        { text: "Cancel", style: "cancel" },
+        { text: t("addProperty.imageSource.camera"), onPress: () => pickImage(true) },
+        { text: t("addProperty.imageSource.gallery"), onPress: () => pickImage(false) },
+        { text: t("addProperty.imageSource.cancel"), style: "cancel" },
       ]
     );
   };
@@ -134,68 +146,88 @@ export default function AddPropertyScreen({ navigation }) {
   const handleSubmit = async () => {
     // Validate required fields
     if (!title.trim()) {
-      Alert.alert("Validation", "Please enter a property title.");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noTitle"));
       return;
     }
     if (!description.trim()) {
-      Alert.alert("Validation", "Please enter a property description.");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noDescription"));
       return;
     }
     if (!pricePerDay && !pricePerWeek && !pricePerMonth) {
-      Alert.alert("Validation", "Please enter at least one price (daily, weekly, or monthly).");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noPrice"));
       return;
     }
     if (!depositAmount) {
-      Alert.alert("Validation", "Please enter a deposit amount.");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noDeposit"));
       return;
     }
     if (!condition || !conditionOptions.some(opt => opt.value === condition)) {
-      Alert.alert("Validation", "Please select a valid property condition.");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noCondition"));
       return;
     }
     if (!city.trim()) {
-      Alert.alert("Validation", "Please enter a city.");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noCity"));
       return;
     }
     if (!address.trim()) {
-      Alert.alert("Validation", "Please enter an address.");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noAddress"));
       return;
     }
     if (!selectedCategoryId) {
-      Alert.alert("Validation", "Please select a property category.");
+      Alert.alert(t("addProperty.validation.title"), t("addProperty.validation.noCategory"));
       return;
     }
 
     setLoading(true);
     try {
-      const formData = new FormData();
-      
-      // Add all required fields
-      formData.append("title", title.trim());
-      formData.append("description", description.trim());
-      formData.append("price_per_day", pricePerDay ? Number(pricePerDay) : null);
-      formData.append("price_per_week", pricePerWeek ? Number(pricePerWeek) : null);
-      formData.append("price_per_month", pricePerMonth ? Number(pricePerMonth) : null);
-      formData.append("deposit_amount", Number(depositAmount));
-      formData.append("condition", condition);
-      formData.append("city", city.trim());
-      formData.append("address", address.trim());
-      formData.append("category_id", selectedCategoryId);
+      const payload = {
+        title: title.trim(),
+        description: description.trim(),
+        price_per_day: pricePerDay ? Number(pricePerDay) : null,
+        price_per_week: pricePerWeek ? Number(pricePerWeek) : null,
+        price_per_month: pricePerMonth ? Number(pricePerMonth) : null,
+        deposit_amount: Number(depositAmount),
+        condition,
+        city: city.trim(),
+        address: address.trim(),
+        category_id: selectedCategoryId,
+      };
 
-      // Add images if any
-      if (images.length > 0) {
-        images.forEach((image, index) => {
-          formData.append("images", {
-            uri: image.uri,
-            type: "image/jpeg",
-            name: `property_${index}_${Date.now()}.jpg`,
-          });
-        });
+      const response = await createProperty(payload);
+      const createdListing = response?.data;
+      const listingId = createdListing?.id || createdListing?.listing?.id || createdListing?.pk || createdListing?.listing_id || createdListing?.data?.id;
+
+      if (!listingId) {
+        throw new Error("Unable to determine created listing ID.");
       }
 
-      await createProperty(formData);
+      // Upload images separately after creating the listing
+      if (images.length > 0) {
+        console.log("AddPropertyScreen - images to upload:", images.map(i => ({ uri: i.uri, name: i.name, type: i.type })));
+        for (const image of images) {
+          if (!image?.uri) {
+            console.warn("Skipping image without uri:", image);
+            continue;
+          }
+          try {
+            console.log("Uploading image for listing", listingId, image.uri, image.name, image.type);
+            await uploadListingImage(listingId, image.uri, image.name, image.type);
+          } catch (uploadError) {
+            console.error("Failed to upload image:", image.uri, uploadError.response?.data || uploadError.message || uploadError);
+            throw uploadError;
+          }
+        }
+
+        // Refresh listing to ensure image fields are populated by backend
+        try {
+          await getPropertyById(listingId);
+        } catch (refreshError) {
+          console.warn("Failed to refresh listing after image upload", refreshError);
+        }
+      }
+
       console.log("Property created successfully!");
-      Alert.alert("Success", "Property posted successfully!");
+      Alert.alert(t("addProperty.success.title"), t("addProperty.success.message"));
       
       // Reset form
       setTitle("");
@@ -238,7 +270,7 @@ export default function AddPropertyScreen({ navigation }) {
         errorMessage = error.message;
       }
       
-      Alert.alert("Submission Failed", errorMessage);
+      Alert.alert(t("addProperty.error.title"), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -261,14 +293,18 @@ export default function AddPropertyScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Post Property</Text>
+        <Text style={styles.headerTitle}>{t("addProperty.title")}</Text>
       </View>
 
       <TouchableOpacity style={styles.uploadCard} onPress={showImageOptions}>
         <Icon name="cloud-upload" size={36} color={colors.primary} />
-        <Text style={styles.uploadText}>Upload Images</Text>
+        <Text style={styles.uploadText}>{t("addProperty.uploadImages")}</Text>
         {images.length > 0 && (
-          <Text style={styles.uploadSubtext}>{images.length} image{images.length !== 1 ? "s" : ""} added</Text>
+          <Text style={styles.uploadSubtext}>
+            {images.length === 1
+              ? t("addProperty.imagesAdded", { count: images.length })
+              : t("addProperty.imagesAddedPlural", { count: images.length })}
+          </Text>
         )}
       </TouchableOpacity>
 
@@ -284,10 +320,10 @@ export default function AddPropertyScreen({ navigation }) {
       )}
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Property Title</Text>
+        <Text style={styles.label}>{t("addProperty.propertyTitle")}</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g., Modern 3 Bedroom Apartment"
+          placeholder={t("addProperty.titlePlaceholder")}
           placeholderTextColor={colors.placeholder}
           value={title}
           onChangeText={setTitle}
@@ -295,10 +331,10 @@ export default function AddPropertyScreen({ navigation }) {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>{t("addProperty.description")}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Describe your property in detail..."
+          placeholder={t("addProperty.descriptionPlaceholder")}
           placeholderTextColor={colors.placeholder}
           value={description}
           onChangeText={setDescription}
@@ -309,14 +345,14 @@ export default function AddPropertyScreen({ navigation }) {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Category</Text>
+        <Text style={styles.label}>{t("addProperty.category")}</Text>
         <TouchableOpacity 
           style={[styles.input, { paddingVertical: 12, justifyContent: "center" }]}
           onPress={() => setShowCategoryModal(true)}
         >
           <View style={styles.pickerDisplay}>
             <Text style={[{ color: selectedCategoryId ? colors.text : colors.placeholder }]}>
-              {selectedCategoryName || "Select Category"}
+              {selectedCategoryName || t("addProperty.selectCategory")}
             </Text>
             <Icon name="arrow-drop-down" size={20} color={colors.textSecondary} />
           </View>
@@ -333,7 +369,7 @@ export default function AddPropertyScreen({ navigation }) {
             onPress={() => setShowCategoryModal(false)}
           >
             <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-              <Text style={styles.modalTitle}>Select Category</Text>
+              <Text style={styles.modalTitle}>{t("addProperty.selectCategoryTitle")}</Text>
               {categoriesLoading ? (
                 <ActivityIndicator color={colors.primary} size="large" style={{ paddingVertical: 20 }} />
               ) : categories.length > 0 ? (
@@ -362,7 +398,7 @@ export default function AddPropertyScreen({ navigation }) {
                 ))
               ) : (
                 <Text style={{ color: colors.text, textAlign: "center", paddingVertical: 20 }}>
-                  No categories available
+                  {t("addProperty.noCategories")}
                 </Text>
               )}
               <TouchableOpacity 
@@ -378,7 +414,7 @@ export default function AddPropertyScreen({ navigation }) {
 
       <View style={styles.row}>
         <View style={[styles.fieldGroup, styles.halfField]}>
-          <Text style={styles.label}>Price/Day (ETB)</Text>
+          <Text style={styles.label}>{t("addProperty.priceDay")}</Text>
           <TextInput
             style={styles.input}
             placeholder="5000"
@@ -389,7 +425,7 @@ export default function AddPropertyScreen({ navigation }) {
           />
         </View>
         <View style={[styles.fieldGroup, styles.halfField]}>
-          <Text style={styles.label}>Price/Week (ETB)</Text>
+          <Text style={styles.label}>{t("addProperty.priceWeek")}</Text>
           <TextInput
             style={styles.input}
             placeholder="30000"
@@ -402,7 +438,7 @@ export default function AddPropertyScreen({ navigation }) {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Price/Month (ETB)</Text>
+        <Text style={styles.label}>{t("addProperty.priceMonth")}</Text>
         <TextInput
           style={styles.input}
           placeholder="100000"
@@ -414,7 +450,7 @@ export default function AddPropertyScreen({ navigation }) {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Deposit Amount (ETB)</Text>
+        <Text style={styles.label}>{t("addProperty.deposit")}</Text>
         <TextInput
           style={styles.input}
           placeholder="50000"
@@ -426,14 +462,14 @@ export default function AddPropertyScreen({ navigation }) {
       </View>
 
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Property Condition</Text>
+        <Text style={styles.label}>{t("addProperty.condition")}</Text>
         <TouchableOpacity 
           style={[styles.input, { paddingVertical: 12, justifyContent: "center" }]}
           onPress={() => setShowConditionModal(true)}
         >
           <View style={styles.pickerDisplay}>
             <Text style={[{ color: condition ? colors.text : colors.placeholder }]}>
-              {condition ? condition.charAt(0).toUpperCase() + condition.slice(1) : "Select Condition"}
+              {condition ? conditionOptions.find((opt) => opt.value === condition)?.label : t("addProperty.selectCondition")}
             </Text>
             <Icon name="arrow-drop-down" size={20} color={colors.textSecondary} />
           </View>
@@ -450,7 +486,7 @@ export default function AddPropertyScreen({ navigation }) {
             onPress={() => setShowConditionModal(false)}
           >
             <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-              <Text style={styles.modalTitle}>Select Condition</Text>
+              <Text style={styles.modalTitle}>{t("addProperty.selectConditionTitle")}</Text>
               {conditionOptions.map((option) => (
                 <TouchableOpacity
                   key={option.value}
@@ -486,20 +522,20 @@ export default function AddPropertyScreen({ navigation }) {
 
       <View style={styles.row}>
         <View style={[styles.fieldGroup, styles.halfField]}>
-          <Text style={styles.label}>City</Text>
+          <Text style={styles.label}>{t("addProperty.city")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Addis Ababa"
+            placeholder={t("addProperty.city")}
             placeholderTextColor={colors.placeholder}
             value={city}
             onChangeText={setCity}
           />
         </View>
         <View style={[styles.fieldGroup, styles.halfField]}>
-          <Text style={styles.label}>Address</Text>
+          <Text style={styles.label}>{t("addProperty.address")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g., Bole, Woliso St."
+            placeholder={t("addProperty.titlePlaceholder")}
             placeholderTextColor={colors.placeholder}
             value={address}
             onChangeText={setAddress}
@@ -508,7 +544,7 @@ export default function AddPropertyScreen({ navigation }) {
       </View>
 
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.submitText}>Post Property</Text>}
+        {loading ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.submitText}>{t("addProperty.submit")}</Text>}
       </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>

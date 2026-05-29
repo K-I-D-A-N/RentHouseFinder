@@ -11,11 +11,13 @@ import {
   Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import useTheme from "../../hooks/useTheme";
 import { getPropertyById, updateProperty } from "../../api/propertyApi";
 import CustomButton from "../../components/CustomButton";
 
 export default function EditPropertyScreen({ navigation, route }) {
+  const { t } = useTranslation();
   const { propertyId } = route.params || {};
   const { colors } = useTheme();
   const [property, setProperty] = useState(null);
@@ -60,7 +62,7 @@ export default function EditPropertyScreen({ navigation, route }) {
       });
     } catch (error) {
       console.error("Failed to load property", error);
-      Alert.alert("Error", "Failed to load property details.");
+      Alert.alert(t("editProperty.error.title"), t("editProperty.error.loadFailed"));
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -77,15 +79,15 @@ export default function EditPropertyScreen({ navigation, route }) {
   const handleSubmit = async () => {
     // Basic validation
     if (!formData.title.trim()) {
-      Alert.alert("Validation Error", "Please enter a property title.");
+      Alert.alert(t("editProperty.validation.title"), t("editProperty.validation.noTitle"));
       return;
     }
     if (!formData.price.trim()) {
-      Alert.alert("Validation Error", "Please enter a price.");
+      Alert.alert(t("editProperty.validation.title"), t("editProperty.validation.noPrice"));
       return;
     }
     if (!formData.location.trim()) {
-      Alert.alert("Validation Error", "Please enter a location.");
+      Alert.alert(t("editProperty.validation.title"), t("editProperty.validation.noLocation"));
       return;
     }
 
@@ -103,7 +105,7 @@ export default function EditPropertyScreen({ navigation, route }) {
       };
 
       await updateProperty(propertyId, updateData);
-      Alert.alert("Success", "Property updated successfully.");
+      Alert.alert(t("editProperty.success.title"), t("editProperty.success.message"));
       navigation.goBack();
     } catch (error) {
       console.error("Failed to update property", error);
@@ -111,8 +113,8 @@ export default function EditPropertyScreen({ navigation, route }) {
         error.response?.data?.detail ||
         error.response?.data?.message ||
         error.message ||
-        "Failed to update property.";
-      Alert.alert("Error", errorMessage);
+        t("editProperty.error.updateFailed");
+      Alert.alert(t("editProperty.error.title"), errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -135,16 +137,16 @@ export default function EditPropertyScreen({ navigation, route }) {
         >
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Listing</Text>
+        <Text style={styles.headerTitle}>{t("editProperty.title")}</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <View style={styles.form}>
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Title *</Text>
+          <Text style={styles.label}>{t("editProperty.titleLabel")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter property title"
+            placeholder={t("editProperty.placeholders.title")}
             placeholderTextColor={colors.textSecondary}
             value={formData.title}
             onChangeText={(value) => handleInputChange("title", value)}
@@ -152,10 +154,10 @@ export default function EditPropertyScreen({ navigation, route }) {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t("editProperty.description")}</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Enter property description"
+            placeholder={t("editProperty.placeholders.description")}
             placeholderTextColor={colors.textSecondary}
             value={formData.description}
             onChangeText={(value) => handleInputChange("description", value)}
@@ -166,10 +168,10 @@ export default function EditPropertyScreen({ navigation, route }) {
 
         <View style={styles.rowContainer}>
           <View style={[styles.formGroup, styles.halfWidth]}>
-            <Text style={styles.label}>Price (ETB) *</Text>
+            <Text style={styles.label}>{t("editProperty.price")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter price"
+              placeholder={t("editProperty.placeholders.price")}
               placeholderTextColor={colors.textSecondary}
               value={formData.price}
               onChangeText={(value) => handleInputChange("price", value)}
@@ -177,10 +179,10 @@ export default function EditPropertyScreen({ navigation, route }) {
             />
           </View>
           <View style={[styles.formGroup, styles.halfWidth]}>
-            <Text style={styles.label}>Property Type</Text>
+            <Text style={styles.label}>{t("editProperty.propertyType")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g., Apartment"
+              placeholder={t("editProperty.placeholders.propertyType")}
               placeholderTextColor={colors.textSecondary}
               value={formData.property_type}
               onChangeText={(value) => handleInputChange("property_type", value)}
@@ -189,10 +191,10 @@ export default function EditPropertyScreen({ navigation, route }) {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Location *</Text>
+          <Text style={styles.label}>{t("editProperty.location")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter location"
+            placeholder={t("editProperty.placeholders.location")}
             placeholderTextColor={colors.textSecondary}
             value={formData.location}
             onChangeText={(value) => handleInputChange("location", value)}
@@ -201,10 +203,10 @@ export default function EditPropertyScreen({ navigation, route }) {
 
         <View style={styles.rowContainer}>
           <View style={[styles.formGroup, styles.halfWidth]}>
-            <Text style={styles.label}>Bedrooms</Text>
+            <Text style={styles.label}>{t("editProperty.bedrooms")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Number"
+              placeholder={t("editProperty.placeholders.number")}
               placeholderTextColor={colors.textSecondary}
               value={formData.bedrooms}
               onChangeText={(value) => handleInputChange("bedrooms", value)}
@@ -212,10 +214,10 @@ export default function EditPropertyScreen({ navigation, route }) {
             />
           </View>
           <View style={[styles.formGroup, styles.halfWidth]}>
-            <Text style={styles.label}>Bathrooms</Text>
+            <Text style={styles.label}>{t("editProperty.bathrooms")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Number"
+              placeholder={t("editProperty.placeholders.number")}
               placeholderTextColor={colors.textSecondary}
               value={formData.bathrooms}
               onChangeText={(value) => handleInputChange("bathrooms", value)}
@@ -225,10 +227,10 @@ export default function EditPropertyScreen({ navigation, route }) {
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Square Feet</Text>
+          <Text style={styles.label}>{t("editProperty.squareFeet")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter square feet"
+            placeholder={t("editProperty.placeholders.squareFeet")}
             placeholderTextColor={colors.textSecondary}
             value={formData.square_feet}
             onChangeText={(value) => handleInputChange("square_feet", value)}
@@ -238,7 +240,7 @@ export default function EditPropertyScreen({ navigation, route }) {
 
         <View style={styles.formGroup}>
           <View style={styles.switchContainer}>
-            <Text style={styles.label}>Verified</Text>
+            <Text style={styles.label}>{t("editProperty.verified")}</Text>
             <Switch
               value={formData.is_verified}
               onValueChange={(value) => handleInputChange("is_verified", value)}
@@ -249,7 +251,7 @@ export default function EditPropertyScreen({ navigation, route }) {
         </View>
 
         <CustomButton
-          title={submitting ? "Updating..." : "Update Listing"}
+          title={submitting ? t("editProperty.updating") : t("editProperty.updateButton")}
           onPress={handleSubmit}
           disabled={submitting}
           style={styles.submitButton}

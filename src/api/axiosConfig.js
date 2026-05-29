@@ -5,7 +5,6 @@ const BASE_URL = "https://betrent-u5jj.onrender.com/api/v1";
 const API = axios.create({
   baseURL: BASE_URL,
   headers: {
-    "Content-Type": "application/json",
     Accept: "application/json",
   },
 });

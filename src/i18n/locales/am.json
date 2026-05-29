@@ -1,0 +1,524 @@
+{
+  "splash": {
+    "appName": "ቤት ኪራይ",
+    "tagline": "በአዲስ አበባ ውስጥ ምርጥ የኪራይ ቤቶችን በእምነት ያግኙ።"
+  },
+  "onboarding": {
+    "skip": "ዝለል",
+    "slides": [
+      {
+        "title": "ቤቶችን በቀላሉ ያግኙ",
+        "description": "በአዲስ አበባ ውስጥ በሺዎች የሚቆጠሩ ቤቶችን በእኛ ብልህ ፍለጋ ያስሱ።"
+      },
+      {
+        "title": "እንደ ፍላጎትዎ ያጣሩ",
+        "description": "ቤቶችን በዋጋ፣ በቦታ፣ በክፍል ቁጥር እና በሌሎች ሁኔታዎች ያጣሩ።"
+      },
+      {
+        "title": "ቤትዎን ያስተዋውቁ",
+        "description": "ቤትዎን ለሺዎች ለሚቆጠሩ ገዢዎች ለማስተዋወቅ ይዘርዝሩ።"
+      }
+    ],
+    "finalSlide": {
+      "title": "ለመቀጠል ዝግጁ ነዎት",
+      "description": "ለመግባት እና ፍለጋ ለመጀመር አንድ ጊዜ ተጨማሪ ያንሸራቱ።"
+    }
+  },
+  "common": {
+    "unknown": "ያልታወቀ"
+  },
+  "login": {
+    "appName": "ቤት ኪራይ ፈላጊ",
+    "subtitle": "በአዲስ አበባ ውስጥ ፍጹም ቤትዎን ያግኙ",
+    "title": "እንኳን ደህና መጡ",
+    "emailPlaceholder": "ኢሜይል",
+    "passwordPlaceholder": "የሚስጥር ቁጥር",
+    "button": "ግባ",
+    "noAccount": "መለያ የለዎትም?",
+    "register": "ይመዝገቡ",
+    "validation": {
+      "title": "ማረጋገጫ",
+      "message": "እባክዎ ኢሜይልና የሚስጥር ቁጥር ያስገቡ።"
+    },
+    "error": {
+      "title": "መግባት አልተሳካም"
+    }
+  },
+  "register": {
+    "title": "መለያ ይፍጠሩ",
+    "subtitle": "ዛሬ ቤት ኪራይ ፈላጊን ይቀላቀሉ",
+    "fullNamePlaceholder": "ሙሉ ስም",
+    "emailPlaceholder": "ኢሜይል",
+    "phonePlaceholder": "ስልክ ቁጥር",
+    "passwordPlaceholder": "የሚስጥር ቁጥር",
+    "confirmPasswordPlaceholder": "የሚስጥር ቁጥር ያረጋግጡ",
+    "selectRole": "ሚና ይምረጡ",
+    "roleCustomer": "ደንበኛ",
+    "roleLandlord": "የቤት ባለቤት",
+    "selectRoleTitle": "ሚና ይምረጡ",
+    "closeButton": "ዝጋ",
+    "button": "መለያ ይፍጠሩ",
+    "hasAccount": "መለያ አለዎት?",
+    "login": "ግባ",
+    "validation": {
+      "fillAll": "እባክዎ ሁሉንም ቦታዎች ይሙሉ።",
+      "selectRole": "እባክዎ ሚና ይምረጡ (ደንበኛ ወይም የቤት ባለቤት)።",
+      "passwordLength": "የሚስጥር ቁጥር ቢያንስ 8 ቁምፊዎች ሊኖረው ይገባል።",
+      "passwordMatch": "የሚስጥር ቁጥሮቹ አይዛመዱም"
+    },
+    "error": {
+      "loginTitle": "መግባት አልተሳካም",
+      "registerTitle": "ምዝገባ አልተሳካም"
+    }
+  },
+  "home": {
+    "heading": "ቤትዎን ያግኙ",
+    "subheading": "በአዲስ አበባ ምርጥ ኪራዮችን ይፈልጉ",
+    "searchPlaceholder": "በቦታ ይፈልጉ...",
+    "allCategories": "ሁሉም",
+    "noListings": "ለዚህ ምድብ ዝርዝሮች አልተገኙም።",
+    "noProperties": "ቤቶች አልተገኙም።",
+    "viewDetails": "ዝርዝር ይመልከቱ",
+    "priceUnavailable": "ዋጋ አይታወቅም",
+    "month": "ወር",
+    "week": "ሳምንት",
+    "day": "ቀን"
+  },
+  "search": {
+    "title": "ፈልጉ እና ያጣሩ",
+    "subtitle": "በማጣሪያዎች ምርጥ ኪራይ ያግኙ።",
+    "priceRange": "የዋጋ ክልል",
+    "minPrice": "ዝቅተኛ ዋጋ",
+    "maxPrice": "ከፍተኛ ዋጋ",
+    "location": "ቦታ",
+    "locationPlaceholder": "ቦታ ያስገቡ",
+    "propertyType": "የቤት አይነት",
+    "allTypes": "ሁሉም አይነቶች",
+    "propertiesFound": "{{count}} ቤቶች ተገኝተዋል",
+    "noProperties": "ለማጣሪያዎቹ የሚስማሙ ቤቶች አልተገኙም።",
+    "propertyFallback": "ቤት",
+    "month": "ወር"
+  },
+  "favorites": {
+    "title": "ተወዳጆች",
+    "subtitle": "{{count}} የተቀመጡ ቤቶች",
+    "empty": "እስካሁን የተቀመጡ ቤቶች የሉም።",
+    "loading": "ተወዳጆችን በመጫን ላይ...",
+    "month": "ወር",
+    "week": "ሳምንት",
+    "day": "ቀን"
+  },
+  "propertyDetail": {
+    "description": "መግለጫ",
+    "readMore": "ተጨማሪ ያንብቡ",
+    "readLess": "ያነሱ ያንብቡ",
+    "owner": "ባለቤት",
+    "phone": "ስልክ",
+    "email": "ኢሜይል",
+    "reviews": "ግምገማዎች",
+    "noReviews": "እስካሁን ምንም ግምገማ የለም",
+    "bookNow": "አሁን ይያዙ",
+    "rented": "ተከራይቷል",
+    "available": "ይገኛል",
+    "unavailable": "አይገኝም",
+    "titleFallback": "የሚያምር ኪራይ ቤት",
+    "bookingFallback": "ማስያዝ",
+    "categoryUnknown": "አጠቃላይ",
+    "perDaySuffix": "/ ቀን",
+    "perMonthSuffix": "/ ወር",
+    "guest": "እጅግ ጥሩ እንግዳ",
+    "noComment": "ምንም አልተሰጠም።",
+    "reviewsCount": "{{count}} ግምገማ",
+    "reviewsCount_plural": "{{count}} ግምገማዎች",
+    "viewsCount": "{{count}} ጊዜ ታይቷል",
+    "viewsCount_plural": "{{count}} ጊዜ ታይቷል",
+    "landlordNotice": "የቤት ባለቤቶች ቤቶችን ማስያዝ አይችሉም።",
+    "alreadyRented": "ይህ ቤት አስቀድሞ ተከራይቷል።",
+    "rentedAlert": {
+      "title": "አስቀድሞ ተከራይቷል",
+      "message": "ይህ ቤት አስቀድሞ ተከራይቷል።"
+    },
+    "checking": "በመፈተሽ ላይ…",
+    "views": "ጊዜ ታይቷል",
+    "priceUnavailable": "ዋጋ አይታወቅም",
+    "locationUnavailable": "ቦታ አይታወቅም",
+    "noDescription": "መግለጫ አይገኝም።",
+    "error": "የቤቱን ዝርዝሮች መጫን አልተሳካም። እባክዎ ግንኙነትዎን ያረጋግጡ እና እንደገና ይሞክሩ።",
+    "unavailableDetails": "የቤቱ ዝርዝሮች አይገኙም።"
+  },
+  "booking": {
+    "title": "ማስያዝ ያረጋግጡ",
+    "loadingDetails": "የዝርዝር መረጃ በመጫን ላይ…",
+    "bookingDates": "የማስያዝ ቀናት",
+    "startDate": "የጀምር ቀን",
+    "endDate": "የማብቂያ ቀን",
+    "datePlaceholder": "ዓዓዓዓ-ወወ-ቀቀ",
+    "dateFormatError": "ቀን ዓዓዓዓ-ወወ-ቀቀ መሆን አለበት",
+    "dateRangeError": "የማብቂያ ቀን ከጀምር ቀን በኋላ መሆን አለበት",
+    "perDaySuffix": "/ ቀን",
+    "priceSummary": "የዋጋ ማጠቃለያ",
+    "totalDays": "ጠቅላላ ቀናት",
+    "pricePerDay": "ዋጋ በቀን",
+    "totalPrice": "ጠቅላላ ዋጋ",
+    "bookNow": "አሁን ይያዙ",
+    "invalidRequest": "ልክ ያልሆነ የማስያዝ ጥያቄ። እባክዎ ከዝርዝሩ ቤት ይምረጡ።",
+    "validation": {
+      "missingId": "የዝርዝር መለያ ጠፍቷል። እባክዎ ቤት እንደገና ይምረጡ።",
+      "invalidDates": "እባክዎ ትክክለኛ የማስያዝ ቀናት ይምረጡ።"
+    },
+    "success": {
+      "title": "ተሳክቷል",
+      "message": "ማስያዝዎ ለፈቃድ በጠባቂ ላይ ነው",
+      "ok": "እሺ"
+    },
+    "error": {
+      "title": "ስህተት"
+    }
+  },
+  "myBookings": {
+    "title": "ማስያዣዎቼ",
+    "empty": "እስካሁን ምንም ማስያዣ የለም።",
+    "statusUnavailable": "ሁኔታ አይታወቅም",
+    "dateUnavailable": "ቀን አይታወቅም",
+    "propertyDeleted": "ቤቱ በባለቤቱ ተሰርዟል",
+    "removedListing": "ይህ ማስያዣ ከተወገደ ዝርዝር ጋር የተያያዘ ነው።",
+    "payNow": "አሁን ይክፈሉ",
+    "writeReview": "ግምገማ ይፃፉ"
+  },
+  "payment": {
+    "title": "ክፍያ",
+    "loading": "የክፍያ ዝርዝሮች በመጫን ላይ…",
+    "noData": "ምንም የማስያዣ ወይም የቤት መረጃ አልተገኘም።",
+    "property": "ቤቱ",
+    "landlord": "የቤት ባለቤት",
+    "bookingDetails": "የማስያዣ ዝርዝሮች",
+    "bookingId": "የማስያዣ መለያ",
+    "checkIn": "መግቢያ",
+    "checkOut": "መውጫ",
+    "duration": "ጊዜ",
+    "day": "ቀን",
+    "days": "ቀናት",
+    "bookingStatus": "የማስያዣ ሁኔታ",
+    "status": {
+      "pending": "በማረጋገጫ ላይ",
+      "approved": "የተፈቀደ",
+      "rejected": "ተከለከወ",
+      "completed": "ተጠናቋል",
+      "paid": "ተከፈለ"
+    },
+    "paymentSummary": "የክፍያ ማጠቃለያ",
+    "rentalCost": "የኪራይ ዋጋ",
+    "securityDeposit": "የደህንነት ቀለብ",
+    "platformFee": "የፕላትፎርም ክፍያ",
+    "totalDue": "ጠቅላላ ሊከፈል የሚገባ",
+    "paymentMethod": "የክፍያ ዘዴ",
+    "chapaTitle": "ቻፓ",
+    "chapaSub": "ደህንነቱ የተጠበቀ የኢትዮጵያ የክፍያ መንገድ",
+    "secure": "ደህንነቱ የተጠበቀ",
+    "protection": "ክፍያዎ እስከ ቤቱ መግቢያ ድረስ በBetRent ደህንነቱ ተጠብቆ ይያዛል።",
+    "pendingBanner": "የቤት ባለቤቱን ፈቃድ በመጠበቅ ላይ",
+    "rejectedBanner": "ማስያዣው በቤት ባለቤቱ ተቀባይነት አላገኘም",
+    "successBanner": "ክፍያ ተሳክቷል — መልካም ቆይታ!",
+    "approvedBanner": "ማስያዣ ፈቃድ ተሰጥቷል — ቆይታን ለማረጋገጥ ክፍያ ይፈፅሙ።",
+    "continueButton": "ወደ ቻፓ ክፍያ ቀጥሉ",
+    "continueSubtitle": "ደህንነቱ በተጠበቀ መልኩ ይዛወራሉ",
+    "refreshButton": "↻  የክፍያ ሁኔታ ያድሱ",
+    "verifyAlert": {
+      "noRef": "ማረጋገጥ አይቻልም",
+      "noRefMessage": "እስካሁን ምንም የክፍያ ማጣቀሻ አልተገኘም።",
+      "verified": "ክፍያ ተረጋግጧል ✓",
+      "verifiedMessage": "ክፍያዎ አሁን ተጠናቋል።",
+      "statusTitle": "የክፍያ ሁኔታ",
+      "statusMessage": "የክፍያ ሁኔታ፡ {{status}}",
+      "unknown": "ያልታወቀ",
+      "errorTitle": "የማረጋገጫ ስህተት"
+    },
+    "payAlert": {
+      "continueTitle": "ክፍያ ይቀጥሉ",
+      "continueMessage": "ክፍያዎን በተከፈተው መስኮት ውስጥ ያጠናቅቁ። ከተከፈለ በኋላ ወደ ይህ መተግበሪያ ይመለሱ።",
+      "completeTitle": "ክፍያ ተጠናቋል",
+      "completeMessage": "ክፍያዎ አስቀድሞ ተጠናቋል።",
+      "failedTitle": "ክፍያ አልተሳካም"
+    }
+  },
+  "profile": {
+    "title": "መገለጫ",
+    "noName": "ስም አልተገኘም",
+    "noEmail": "ኢሜይል አልተገኘም",
+    "noPhone": "ስልክ አልተገኘም",
+    "myListings": "ዝርዝሮቼ",
+    "myListingsSubtitle": "ቤቶቼን አስተዳድር",
+    "myBookings": "ማስያዣዎቼ",
+    "myBookingsSubtitle": "የተከራዩ ቤቶቼን ይመልከቱ",
+    "settings": "ቅንብሮች",
+    "settingsSubtitle": "የመተግበሪያ ምርጫዎች",
+    "logout": "ውጣ",
+    "logoutSubtitle": "ከመለያዎ ይውጡ",
+    "ctaTitle": "ቤትዎን ማስተዋወቅ ይፈልጋሉ?",
+    "ctaSubtitle": "ለሺዎች ለሚቆጠሩ ሊሆኑ ገዢዎች ይድረሱ",
+    "postProperty": "ቤት ያስተዋውቁ",
+    "landlordOnly": {
+      "title": "እንደ ቤት ባለቤት ይመዝገቡ",
+      "message": "ቤቶችን ለማስተዋወቅ እባክዎ በቤት ባለቤትነት ይመዝገቡ።",
+      "ok": "እሺ"
+    },
+    "permission": {
+      "camera": "የካሜራ ፈቃድ ያስፈልጋል።",
+      "gallery": "የጋለሪ ፈቃድ ያስፈልጋል።",
+      "title": "ፈቃድ"
+    },
+    "imageSource": {
+      "title": "የምስል ምንጭ ይምረጡ",
+      "message": "የመገለጫ ፎቶዎን ከየት ለመስቀል ይምረጡ",
+      "camera": "ካሜራ",
+      "gallery": "ጋለሪ",
+      "cancel": "ይቅር"
+    },
+    "uploadSuccess": {
+      "title": "ተሳክቷል",
+      "message": "የመገለጫ ምስል ተዘምኗል።"
+    },
+    "uploadFailed": "መስቀሉ አልተሳካም"
+  },
+  "settings": {
+    "title": "ቅንብሮች",
+    "subtitle": "ምርጫዎችዎን እና የመተግበሪያ ተሞክሮዎን ያስተዳድሩ።",
+    "notifications": {
+      "title": "ማሳወቂያዎች",
+      "subtitle": "የማስያዣ እና አዲስ ዝርዝር ማሳወቂያዎችን ይቀበሉ።",
+      "allowed": "ተፈቅዷል",
+      "denied": "ተከልክሏል",
+      "checking": "ፈቃዶችን በማረጋገጥ ላይ...",
+      "status": "ሁኔታ",
+      "deniedAlert": {
+        "title": "ማሳወቂያዎች ተከልክለዋል",
+        "message": "እባክዎ ማሳወቂያዎችን በመሳሪያ ቅንብሮችዎ ውስጥ ይፍቀዱ።",
+        "cancel": "ይቅር",
+        "openSettings": "ቅንብሮችን ክፈት"
+      },
+      "requestError": "የማስታወቂያ ፈቃድ ማግኘት አልቻለም።",
+      "disabledAlert": {
+        "title": "ማሳወቂያዎች ተቦርቷል",
+        "ios": "ማሳወቂያዎችን ከመሳሪያ ቅንብሮች ዳግም ማንቃት ይችላሉ።",
+        "android": "ማሳወቂያዎችን ከመተግበሪያ ቅንብሮች ያቁሙ።"
+      }
+    },
+    "darkMode": {
+      "title": "ጨለማ ሁነታ",
+      "subtitle": "የመተግበሪያ ገጽታን ወደ ጨለማ ሁነታ ቀይሩ።",
+      "enable": "ጨለማ ገጽታ አንቃ"
+    },
+    "language": {
+      "title": "ቋንቋ",
+      "subtitle": "የአሁን ምርጫ",
+      "english": "እንግሊዝኛ",
+      "amharic": "አማርኛ"
+    },
+    "deleteAccount": {
+      "title": "መለያ ሰርዝ",
+      "dangerZone": "አደገኛ ቦታ",
+      "description": "መለያዎን እና ሁሉንም ውሂብዎን፣ ማስያዣዎችን እና ዝርዝሮችን ቀጥሎ ያሰናክሉ። ይህ እርምጃ ሊቀለበስ አይችልም።",
+      "button": "🗑  መለያዬን ሰርዝ",
+      "confirm1": {
+        "title": "መለያ ሰርዝ",
+        "message": "መለያዎን መሰረዝ እርግጠኛ ነዎት? ይህ እርምጃ ሊቀለበስ አይችልም።",
+        "cancel": "ይቅር",
+        "continue": "ቀጥል"
+      },
+      "confirm2": {
+        "title": "የመጨረሻ ማረጋገጫ",
+        "message": "መለያዎ እና ሁሉም ተዛማጅ ውሂብ ቀጥሎ ይሰናከላሉ። መቀጠል ይፈልጋሉ?",
+        "back": "ተመለስ",
+        "delete": "መለያዬን ሰርዝ"
+      },
+      "error": "ስህተት"
+    }
+  },
+  "addProperty": {
+    "title": "ቤት ያስተዋውቁ",
+    "uploadImages": "ምስሎችን ስቀል",
+    "imagesAdded": "{{count}} ምስል ታክሏል",
+    "imagesAddedPlural": "{{count}} ምስሎች ታክለዋል",
+    "propertyTitle": "የቤቱ ርዕስ",
+    "titlePlaceholder": "ለምሳሌ፣ ዘመናዊ 3 መኝታ ቤት አፓርትመንት",
+    "description": "መግለጫ",
+    "descriptionPlaceholder": "ቤቱን በዝርዝር ይግለጹ...",
+    "category": "ምድብ",
+    "selectCategory": "ምድብ ይምረጡ",
+    "selectCategoryTitle": "ምድብ ይምረጡ",
+    "priceDay": "ዋጋ/ቀን (ብር)",
+    "priceWeek": "ዋጋ/ሳምንት (ብር)",
+    "priceMonth": "ዋጋ/ወር (ብር)",
+    "deposit": "የቀለብ መጠን (ብር)",
+    "condition": "የቤቱ ሁኔታ",
+    "selectCondition": "ሁኔታ ይምረጡ",
+    "selectConditionTitle": "ሁኔታ ይምረጡ",
+    "city": "ከተማ",
+    "address": "አድራሻ",
+    "submit": "ቤት ያስተዋውቁ",
+    "close": "ዝጋ",
+    "noCategories": "ምድቦች አልተገኙም",
+    "conditions": {
+      "new": "አዲስ",
+      "like_new": "እንደ አዲስ",
+      "good": "ጥሩ",
+      "fair": "ተቀባይነት ያለው"
+    },
+    "imageSource": {
+      "title": "የቤት ምስሎችን ጨምር",
+      "message": "ምስሎችን ከየት ለመስቀል ይምረጡ",
+      "camera": "ካሜራ",
+      "gallery": "ጋለሪ",
+      "cancel": "ይቅር"
+    },
+    "permission": {
+      "camera": "የካሜራ ፈቃድ ያስፈልጋል።",
+      "gallery": "የጋለሪ ፈቃድ ያስፈልጋል።",
+      "title": "ፈቃድ"
+    },
+    "validation": {
+      "title": "ማረጋገጫ",
+      "noTitle": "እባክዎ የቤቱን ርዕስ ያስገቡ።",
+      "noDescription": "እባክዎ የቤቱን መግለጫ ያስገቡ።",
+      "noPrice": "እባክዎ ቢያንስ አንድ ዋጋ ያስገቡ (ዕለታዊ፣ ሳምንታዊ ወይም ወርሃዊ)።",
+      "noDeposit": "እባክዎ የቀለብ መጠን ያስገቡ።",
+      "noCondition": "እባክዎ ትክክለኛ የቤቱ ሁኔታ ይምረጡ።",
+      "noCity": "እባክዎ ከተማ ያስገቡ።",
+      "noAddress": "እባክዎ አድራሻ ያስገቡ።",
+      "noCategory": "እባክዎ የቤቱ ምድብ ይምረጡ።"
+    },
+    "success": {
+      "title": "ተሳክቷል",
+      "message": "ቤቱ በተሳካ ሁኔታ ተለጥፏል!"
+    },
+    "error": {
+      "title": "ማስገባቱ አልተሳካም",
+      "loadCategories": "ምድቦችን መጫን አልተሳካም።",
+      "pickImage": "ምስልን ማምጣት አልተሳካም።",
+      "pickImageTitle": "ስህተት"
+    },
+    "landlordOnly": {
+      "title": "ለቤት ባለቤቶች ብቻ",
+      "message": "የቤት ዝርዝሮችን መፍጠር እና ማስተዳደር የሚችሉት የቤት ባለቤት መለያዎች ብቻ ናቸው።"
+    }
+  },
+  "editListing": {
+    "title": "ዝርዝር አስተካክል",
+    "titleLabel": "ርዕስ",
+    "description": "መግለጫ",
+    "price": "ዋጋ",
+    "city": "ከተማ",
+    "category": "ምድብ",
+    "condition": "ሁኔታ",
+    "saveButton": "ለውጦችን አስቀምጥ",
+    "conditions": {
+      "new": "አዲስ",
+      "like_new": "እንደ አዲስ",
+      "good": "ጥሩ",
+      "fair": "ተቀባይነት ያለው"
+    },
+    "validation": {
+      "title": "ማረጋገጫ",
+      "message": "እባክዎ ሁሉንም አስፈላጊ ቦታዎች ይሙሉ።",
+      "invalidCondition": "እባክዎ ትክክለኛ የቤቱ ሁኔታ ይምረጡ።"
+    },
+    "success": {
+      "title": "ተሳክቷል",
+      "message": "ዝርዝሩ በተሳካ ሁኔታ ተዘምኗል!",
+      "ok": "እሺ"
+    },
+    "error": {
+      "title": "ስህተት",
+      "loadCategories": "ምድቦችን መጫን አልተሳካም",
+      "fetchListing": "የዝርዝር ዝርዝሮችን ማምጣት አልተሳካም",
+      "updateFailed": "ዝርዝሩን ማዘመን አልተሳካም።"
+    }
+  },
+  "editProperty": {
+    "title": "ዝርዝር አስተካክል",
+    "titleLabel": "ርዕስ *",
+    "description": "መግለጫ",
+    "price": "ዋጋ (ብር) *",
+    "propertyType": "የቤት አይነት",
+    "location": "ቦታ *",
+    "bedrooms": "መኝታ ቤቶች",
+    "bathrooms": "መታጠቢያ ቤቶች",
+    "squareFeet": "ስኩዌር ፊት",
+    "verified": "የተረጋገጠ",
+    "updateButton": "ዝርዝር አዘምን",
+    "updating": "በማዘመን ላይ...",
+    "placeholders": {
+      "title": "የቤቱን ርዕስ ያስገቡ",
+      "description": "የቤቱን መግለጫ ያስገቡ",
+      "price": "ዋጋ ያስገቡ",
+      "propertyType": "ለምሳሌ፣ አፓርትመንት",
+      "location": "ቦታ ያስገቡ",
+      "number": "ቁጥር",
+      "squareFeet": "ስኩዌር ፊት ያስገቡ"
+    },
+    "validation": {
+      "title": "የማረጋገጫ ስህተት",
+      "noTitle": "እባክዎ የቤቱን ርዕስ ያስገቡ።",
+      "noPrice": "እባክዎ ዋጋ ያስገቡ።",
+      "noLocation": "እባክዎ ቦታ ያስገቡ።"
+    },
+    "success": {
+      "title": "ተሳክቷል",
+      "message": "ቤቱ በተሳካ ሁኔታ ተዘምኗል።"
+    },
+    "error": {
+      "title": "ስህተት",
+      "loadFailed": "የቤቱ ዝርዝሮችን መጫን አልተሳካም።",
+      "updateFailed": "ቤቱን ማዘመን አልተሳካም።"
+    }
+  },
+  "myListings": {
+    "title": "ዝርዝሮቼ",
+    "tabListings": "ዝርዝሮቼ",
+    "tabRequests": "ጥያቄዎች",
+    "errorTitle": "ስህተት",
+    "emptyListings": {
+      "title": "እስካሁን ዝርዝሮች የሉም",
+      "description": "እስካሁን ምንም ቤቶችን አላስተዋወቁም። የመጀመሪያ ዝርዝርዎን በመፍጠር ይጀምሩ!",
+      "button": "ዝርዝር ይፍጠሩ"
+    },
+    "emptyRequests": {
+      "title": "ምንም ጥያቄዎች የሉም",
+      "description": "እስካሁን ምንም የማስያዣ ጥያቄዎች የሉም።"
+    },
+    "delete": {
+      "title": "ዝርዝር ሰርዝ",
+      "message": "\"{{title}}\" መሰረዝ እርግጠኛ ነዎት?",
+      "cancel": "ይቅር",
+      "confirm": "ሰርዝ",
+      "success": "ቤቱ በተሳካ ሁኔታ ተሰርዟል",
+      "error": "ዝርዝሩን መሰረዝ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+      "successTitle": "ተሳክቷል",
+      "errorTitle": "ስህተት"
+    },
+    "approve": {
+      "success": "ማስያዣ ፈቃድ ተሰጥቷል።",
+      "successTitle": "ተሳክቷል",
+      "error": "የማስያዣ ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+      "errorTitle": "ስህተት"
+    },
+    "reject": {
+      "success": "ማስያዣ ተቀባይነት አላገኘም።",
+      "successTitle": "ተሳክቷል"
+    },
+    "request": {
+      "unknown": "ያልታወቀ ተከራይ",
+      "total": "ጠቅላላ",
+      "pending": "በጠባቂ ላይ",
+      "approved": "ፈቃድ ተሰጥቷል",
+      "rejected": "ተቀባይነት አላገኘም",
+      "approve": "ፍቀድ",
+      "reject": "አትፍቀድ"
+    },
+    "verified": "የተረጋገጠ",
+    "priceUnavailable": "ዋጋ አይታወቅም",
+    "month": "ወር",
+    "week": "ሳምንት",
+    "day": "ቀን"
+  }
+}

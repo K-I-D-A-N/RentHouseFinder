@@ -1,4 +1,5 @@
 ﻿import api from "./axiosConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Fetch only the current user's listings
 export const getMyListings = () => api.get("/listings/my/listings");
@@ -22,27 +23,62 @@ export const createProperty = (data) => {
 };
 
 // Upload image for a listing
-export const uploadListingImage = (listingId, imageUri, isPrimary = false, sortOrder = 1) => {
-  const formData = new FormData();
-  formData.append("image", {
-    uri: imageUri,
-    type: "image/jpeg",
-    name: `listing_${listingId}_${Date.now()}.jpg`,
-  });
-  formData.append("is_primary", isPrimary ? "true" : "false");
-  formData.append("sort_order", sortOrder);
+export const uploadListingImage = async (listingId, imageUri, imageName, imageType, isPrimary = false, sortOrder = 0) => {
+  const fileName = imageName || `listing_${listingId}_${Date.now()}.jpg`;
+  const mimeType = imageType || "image/jpeg";
 
-  console.log("uploadListingImage - uploading to /listings/" + listingId + "/images/", {
+  console.log("uploadListingImage - preparing image upload", {
+    listingId,
+    imageUri,
+    fileName,
+    mimeType,
     isPrimary,
     sortOrder,
   });
 
-  return api.post(`/listings/${listingId}/images/`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  }).then(response => {
-    console.log("uploadListingImage response:", response.data);
-    return response;
+  const formData = new FormData();
+  formData.append("image", {
+    uri: imageUri,
+    type: mimeType,
+    name: fileName,
   });
+  formData.append("is_primary", String(isPrimary));
+  formData.append("sort_order", String(sortOrder));
+
+  const token = await AsyncStorage.getItem("auth_token");
+  const baseURL = api.defaults.baseURL ? api.defaults.baseURL.replace(/\/$/, "") : "";
+  const url = `${baseURL}/listings/${listingId}/images/`;
+
+  const headers = {
+    Accept: "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  console.log("uploadListingImage - sending fetch request", { url, headers, fileName, mimeType });
+
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+    headers,
+  });
+
+  const responseText = await response.text();
+  let responseData = responseText;
+  try {
+    responseData = JSON.parse(responseText);
+  } catch (error) {
+    // response is not JSON
+  }
+
+  if (!response.ok) {
+    console.error("uploadListingImage failed:", { status: response.status, responseData });
+    const error = new Error(`Image upload failed with status ${response.status}`);
+    error.response = { status: response.status, data: responseData };
+    throw error;
+  }
+
+  console.log("uploadListingImage success:", responseData);
+  return { data: responseData };
 };
 
 export const updateProperty = (id, data) => api.put(`/listings/${id}/update/`, data);

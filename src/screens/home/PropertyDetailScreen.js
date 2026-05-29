@@ -12,6 +12,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import useTheme from "../../hooks/useTheme";
@@ -37,6 +38,7 @@ const renderStars = (rating) => {
 };
 
 export default function PropertyDetailScreen({ route, navigation }) {
+  const { t } = useTranslation();
   const { slug, id, image: routeImage, title: routeTitle, pricePerDay: routePricePerDay } = route.params || {};
   const { colors } = useTheme();
   const { role } = useAuth();
@@ -87,7 +89,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
       }
     } catch (fetchError) {
       console.error("Property detail fetch failed", fetchError.response?.data || fetchError.message || fetchError);
-      setError("Unable to load the property details. Please check your connection and try again.");
+      setError(t("propertyDetail.error"));
       setProperty(null);
       setReviews([]);
     } finally {
@@ -120,7 +122,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
   if (!property) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}> 
-        <Text style={[styles.emptyText, { color: colors.text }]}>Property details unavailable.</Text>
+        <Text style={[styles.emptyText, { color: colors.text }]}>{t("propertyDetail.unavailableDetails")}</Text>
       </View>
     );
   }
@@ -140,11 +142,18 @@ export default function PropertyDetailScreen({ route, navigation }) {
     return `https://betrent-u5jj.onrender.com/${url}`;
   };
 
-  const primary = getPrimaryImageUrl(property) || normalizeUrl(makeImageUri(routeImage)) || normalizeUrl(makeImageUri(property.image)) || normalizeUrl(makeImageUri(property.cover_image)) || "";
-  const extraImages = Array.isArray(property.images) 
+  const primary = getPrimaryImageUrl(property)
+    || normalizeUrl(makeImageUri(routeImage))
+    || normalizeUrl(makeImageUri(property.primary_image_url))
+    || normalizeUrl(makeImageUri(property.image_url))
+    || normalizeUrl(makeImageUri(property.image))
+    || normalizeUrl(makeImageUri(property.cover_image))
+    || "";
+
+  const extraImages = Array.isArray(property.images)
     ? property.images
         .map((i) => normalizeUrl(i?.image_url || i?.url || i?.image || i?.uri || ""))
-        .filter(Boolean) 
+        .filter(Boolean)
     : [];
   const heroImages = primary ? [primary, ...extraImages.filter((u) => u !== primary)] : extraImages.length ? extraImages : ["https://via.placeholder.com/1080x720?text=No+Image"];
 
@@ -204,16 +213,16 @@ export default function PropertyDetailScreen({ route, navigation }) {
     return "";
   };
 
-  const description = property.description || property.summary || property.details || "No description available.";
+  const description = property.description || property.summary || property.details || t("propertyDetail.noDescription");
   const owner = property.owner || property.host || {};
   const ownerName = getOwnerField(property, "full_name");
   const ownerEmail = getOwnerField(property, "email");
-  const category = makeString(property.category || property.property_type || property.type) || "General";
-  const location = makeString(property.location || property.city || property.address) || "Location unavailable";
+  const category = makeString(property.category || property.property_type || property.type) || t("propertyDetail.categoryUnknown");
+  const location = makeString(property.location || property.city || property.address) || t("propertyDetail.locationUnavailable");
   const priceLabel = property.price_per_day
-    ? `ETB ${Number(property.price_per_day).toLocaleString()} / day`
+    ? `ETB ${Number(property.price_per_day).toLocaleString()} ${t("propertyDetail.perDaySuffix")}`
     : property.price
-    ? `ETB ${Number(property.price).toLocaleString()} / month`
+    ? `ETB ${Number(property.price).toLocaleString()} ${t("propertyDetail.perMonthSuffix")}`
     : "Price unavailable";
   const views = property.views || property.view_count || property.viewCount;
   const currentListingId = property.id || property.pk || id;
@@ -225,12 +234,12 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const handleBookNow = () => {
     if (!currentListingId) return;
     if (isRented) {
-      Alert.alert("Already rented", "This house is already rented.");
+      Alert.alert(t("propertyDetail.rentedAlert.title"), t("propertyDetail.rentedAlert.message"));
       return;
     }
     if (!canBook) return;
     const bookingImage = heroImages[0] || routeImage;
-    const bookingTitle = property.title || property.name || routeTitle || "Booking";
+    const bookingTitle = property.title || property.name || routeTitle || t("propertyDetail.bookingFallback");
     const bookingPrice = routePricePerDay || property.price_per_day || property.price || 0;
     console.log("BOOK NOW listingId:", currentListingId);
     navigation.navigate("HomeTab", {
@@ -266,15 +275,15 @@ export default function PropertyDetailScreen({ route, navigation }) {
           </View>
           <View style={styles.metaRight}>
             <View style={[styles.statusPill, { backgroundColor: isRented ? "#fee2e2" : availability ? "#dff6e7" : "#f8d7da" }]}> 
-              <Text style={[styles.statusText, { color: isRented ? "#9f1239" : availability ? "#1f7a3f" : "#842029" }]}>{isRented ? "Rented" : availability ? "Available" : "Unavailable"}</Text>
+              <Text style={[styles.statusText, { color: isRented ? "#9f1239" : availability ? "#1f7a3f" : "#842029" }]}>{isRented ? t("propertyDetail.rented") : availability ? t("propertyDetail.available") : t("propertyDetail.unavailable")}</Text>
             </View>
             {typeof views !== "undefined" && (
-              <Text style={styles.viewText}>{views} views</Text>
+              <Text style={styles.viewText}>{t("propertyDetail.viewsCount", { count: views })}</Text>
             )}
           </View>
         </View>
 
-        <Text style={[styles.title, { color: colors.text }]}>{property.title || property.name || "Beautiful rental property"}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{property.title || property.name || t("propertyDetail.titleFallback")}</Text>
         <Text style={[styles.locationText, { color: colors.textSecondary }]}>{location}</Text>
 
         <View style={[styles.section, { backgroundColor: colors.surface }]}> 
@@ -282,40 +291,40 @@ export default function PropertyDetailScreen({ route, navigation }) {
           <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={expanded ? undefined : 4}>{description}</Text>
           {description.length > 140 && (
             <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-              <Text style={[styles.readMoreText, { color: colors.primary }]}>{expanded ? "Read less" : "Read more"}</Text>
+              <Text style={[styles.readMoreText, { color: colors.primary }]}>{expanded ? t("propertyDetail.readLess") : t("propertyDetail.readMore")}</Text>
             </TouchableOpacity>
           )}
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.surface }]}> 
-          <Text style={[styles.sectionHeader, { color: colors.text }]}>Owner</Text>
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>{t("propertyDetail.owner")}</Text>
           <View style={styles.ownerRow}>
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}> 
               <Text style={styles.avatarText}>{ownerName && ownerName !== '-' ? ownerName.charAt(0).toUpperCase() : '-'}</Text>
             </View>
             <View style={styles.ownerDetails}>
               <Text style={[styles.ownerName, { color: colors.text }]}>{ownerName}</Text>
-              <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>Email: {ownerEmail}</Text>
+              <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>{t("propertyDetail.email")}: {ownerEmail}</Text>
             </View>
           </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.surface }]}> 
           <View style={styles.reviewsHeaderRow}>
-            <Text style={[styles.sectionHeader, { color: colors.text }]}>Reviews</Text>
+            <Text style={[styles.sectionHeader, { color: colors.text }]}>{t("propertyDetail.reviews")}</Text>
             {reviewStats ? (
               <View style={styles.statsRow}>
                 <Text style={[styles.avgText, { color: colors.text }]}>{Number(reviewStats.average || reviewStats.avg || 0).toFixed(1)}</Text>
                 <View style={{ marginLeft: 8 }}>{renderStars(Math.round(reviewStats.average || reviewStats.avg || 0))}</View>
-                <Text style={[styles.countText, { color: colors.textSecondary }]}>{reviewStats.count ?? reviewStats.total ?? reviews.length} reviews</Text>
+                <Text style={[styles.countText, { color: colors.textSecondary }]}>{t("propertyDetail.reviewsCount", { count: reviewStats.count ?? reviewStats.total ?? reviews.length })}</Text>
               </View>
             ) : (
-              <Text style={[styles.countText, { color: colors.textSecondary }]}>{reviews.length} reviews</Text>
+              <Text style={[styles.countText, { color: colors.textSecondary }]}>{t("propertyDetail.reviewsCount", { count: reviews.length })}</Text>
             )}
           </View>
 
           {reviews.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No reviews yet</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t("propertyDetail.noReviews")}</Text>
           ) : (
             reviews.map((review) => (
               <View key={review.id || review._id || `${review.user}-${Math.random()}`} style={styles.reviewCard}>
@@ -324,11 +333,11 @@ export default function PropertyDetailScreen({ route, navigation }) {
                     <View style={[styles.avatar, { backgroundColor: colors.primary, marginRight: 8 }]}> 
                       <Text style={styles.avatarText}>{(review.user_name || review.author || review.user || "G").charAt(0).toUpperCase()}</Text>
                     </View>
-                    <Text style={[styles.reviewName, { color: colors.text }]}>{review.user_name || review.author || review.user || "Guest"}</Text>
+                    <Text style={[styles.reviewName, { color: colors.text }]}>{review.user_name || review.author || review.user || t("propertyDetail.guest")}</Text>
                   </View>
                   <View style={styles.ratingRow}>{renderStars(review.rating)}</View>
                 </View>
-                <Text style={[styles.reviewComment, { color: colors.textSecondary }]}>{review.comment || review.body || "No comment provided."}</Text>
+                <Text style={[styles.reviewComment, { color: colors.textSecondary }]}>{review.comment || review.body || t("propertyDetail.noComment")}</Text>
                 <Text style={[styles.reviewDate, { color: colors.textSecondary }]}>{new Date(review.created_at || review.date || review.timestamp || review.created).toLocaleDateString()}</Text>
               </View>
             ))
@@ -348,13 +357,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
           disabled={!canBook || !availability || isRented}
           onPress={handleBookNow}
         >
-          <Text style={[styles.bookButtonText, { color: colors.surface }]}>{isRented ? "Rented" : "Book Now"}</Text>
+          <Text style={[styles.bookButtonText, { color: colors.surface }]}>{isRented ? t("propertyDetail.rented") : t("propertyDetail.bookNow")}</Text>
         </TouchableOpacity>
         {isLandlord && (
-          <Text style={[styles.disabledNotice, { color: colors.textSecondary }]}>Landlords cannot book properties.</Text>
+          <Text style={[styles.disabledNotice, { color: colors.textSecondary }]}>{t("propertyDetail.landlordNotice")}</Text>
         )}
         {isRented && !isLandlord && (
-          <Text style={[styles.disabledNotice, { color: colors.textSecondary }]}>This property is already rented.</Text>
+          <Text style={[styles.disabledNotice, { color: colors.textSecondary }]}>{t("propertyDetail.alreadyRented")}</Text>
         )}
       </View>
     </View>

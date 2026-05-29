@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { getMyBookings } from "../../api/bookingApi";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "../../hooks/useTheme";
@@ -16,6 +17,7 @@ const statusColor = (status, colors) => {
 };
 
 export default function MyBookingsScreen() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const navigation = useNavigation();
   const [bookings, setBookings] = useState([]);
@@ -54,17 +56,17 @@ export default function MyBookingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
-      <Text style={[styles.title, { color: colors.text }]}>My Bookings</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{t("myBookings.title")}</Text>
       <FlatList
         data={bookings}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
             <Text style={[styles.propertyName, { color: colors.text }]}> 
-              {item.property_title || item.listing_title || item.listing?.title || item.title || "Property deleted by owner"}
+              {item.property_title || item.listing_title || item.listing?.title || item.title || t("myBookings.propertyDeleted")}
             </Text>
-            <Text style={[styles.propertyDetail, { color: colors.textSecondary }]}>{item.status || "Status unavailable"}</Text>
-            <Text style={[styles.propertyDetail, { color: colors.textSecondary }]}>{item.start_date || item.booking_date || item.check_in_date || "Date unavailable"}</Text>
+            <Text style={[styles.propertyDetail, { color: colors.textSecondary }]}>{item.status || t("myBookings.statusUnavailable")}</Text>
+            <Text style={[styles.propertyDetail, { color: colors.textSecondary }]}>{item.start_date || item.booking_date || item.check_in_date || t("myBookings.dateUnavailable")}</Text>
             {/* Pay Now button for Approved bookings */}
             {String(item.status).toLowerCase() === "approved" && (item.listing_slug || item.listing?.slug || item.property_slug || item.slug) && (
               <TouchableOpacity
@@ -79,7 +81,7 @@ export default function MyBookingsScreen() {
                   navigation.navigate("PaymentScreen", { booking: item });
                 }}
               >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Pay Now</Text>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("myBookings.payNow")}</Text>
               </TouchableOpacity>
             )}
             {String(item.status).toLowerCase() === "completed" && (
@@ -96,17 +98,17 @@ export default function MyBookingsScreen() {
                   setReviewModalVisible(true);
                 }}
               >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Write Review</Text>
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>{t("myBookings.writeReview")}</Text>
               </TouchableOpacity>
             )}
             {String(item.status).toLowerCase() === "approved" && !(item.listing_slug || item.listing?.slug || item.property_slug || item.slug) && (
-              <Text style={[styles.propertyDetail, { color: colors.textSecondary, marginTop: 10 }]}>This booking is associated with a removed listing.</Text>
+              <Text style={[styles.propertyDetail, { color: colors.textSecondary, marginTop: 10 }]}>{t("myBookings.removedListing")}</Text>
             )}
           </View>
         )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No bookings yet.</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t("myBookings.empty")}</Text>
           </View>
         }
         contentContainerStyle={bookings.length ? styles.list : styles.emptyList}

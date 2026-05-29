@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import { useTranslation } from "react-i18next";
 import useTheme from "../../hooks/useTheme";
 
 export default function SplashScreen({ navigation }) {
+  const { t } = useTranslation();
   useEffect(() => {
     const timeout = setTimeout(() => {
       navigation.replace("Onboarding");
@@ -17,12 +19,12 @@ export default function SplashScreen({ navigation }) {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.logoCard}>
         <Image
-          source={{ uri: "https://img.icons8.com/ios-filled/100/ff7a00/house.png" }}
+          source={require("../../../assets/images/gojjo.jpg")}
           style={styles.logoIcon}
         />
-        <Text style={styles.logoText}>RentHouse</Text>
+        <Text style={styles.logoText}>{t("splash.appName")}</Text>
       </View>
-      <Text style={styles.tagline}>Discover the best rental homes in Addis Ababa with confidence.</Text>
+      <Text style={styles.tagline}>{t("splash.tagline")}</Text>
     </ScrollView>
   );
 }

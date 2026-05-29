@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { useTranslation } from "react-i18next";
 import useAuth from "../../hooks/useAuth";
 import useTheme from "../../hooks/useTheme";
 
 export default function RegisterScreen({ navigation }) {
+  const { t } = useTranslation();
   const { register, login } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,25 +22,25 @@ export default function RegisterScreen({ navigation }) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   
   const roleOptions = [
-    { label: "Customer", value: "customer" },
-    { label: "Landlord", value: "landlord" },
+    { label: t("register.roleCustomer"), value: "customer" },
+    { label: t("register.roleLandlord"), value: "landlord" },
   ];
 
   const handleRegister = async () => {
     if (!fullName || !email || !phone || !password || !confirmPassword) {
-      Alert.alert("Validation", "Please fill in all fields.");
+      Alert.alert(t("register.validation.title"), t("register.validation.fillAll"));
       return;
     }
     if (!selectedRole) {
-      Alert.alert("Validation", "Please select a role (Customer or Landlord).");
+      Alert.alert(t("register.validation.title"), t("register.validation.selectRole"));
       return;
     }
     if (password.length < 8) {
-      Alert.alert("Validation", "Password must be at least 8 characters.");
+      Alert.alert(t("register.validation.title"), t("register.validation.passwordLength"));
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Validation", "Passwords do not match");
+      Alert.alert(t("register.validation.title"), t("register.validation.passwordMatch"));
       return;
     }
     setLoading(true);
@@ -92,15 +94,15 @@ export default function RegisterScreen({ navigation }) {
     <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join Rent House Finder today</Text>
+          <Text style={styles.title}>{t("register.title")}</Text>
+          <Text style={styles.subtitle}>{t("register.subtitle")}</Text>
         </View>
         <View style={styles.card}>
           <View style={styles.inputContainer}>
             <Icon name="person" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
               style={styles.input}
-              placeholder="Full Name"
+              placeholder={t("register.fullNamePlaceholder")}
               placeholderTextColor={colors.placeholder}
               value={fullName}
               onChangeText={setFullName}
@@ -110,7 +112,7 @@ export default function RegisterScreen({ navigation }) {
             <Icon name="email" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder={t("register.emailPlaceholder")}
               placeholderTextColor={colors.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -122,7 +124,7 @@ export default function RegisterScreen({ navigation }) {
             <Icon name="phone" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
               style={styles.input}
-              placeholder="Phone Number"
+              placeholder={t("register.phonePlaceholder")}
               placeholderTextColor={colors.placeholder}
               keyboardType="phone-pad"
               value={phone}
@@ -135,7 +137,7 @@ export default function RegisterScreen({ navigation }) {
           >
             <Icon name="security" size={20} color={colors.textSecondary} style={styles.icon} />
             <Text style={[styles.input, { color: selectedRole ? colors.text : colors.placeholder }]}>
-              {selectedRole ? roleOptions.find(r => r.value === selectedRole)?.label : "Select Role"}
+              {selectedRole ? roleOptions.find(r => r.value === selectedRole)?.label : t("register.selectRole")}
             </Text>
             <Icon name="arrow-drop-down" size={20} color={colors.textSecondary} style={styles.icon} />
           </TouchableOpacity>
@@ -151,7 +153,7 @@ export default function RegisterScreen({ navigation }) {
               onPress={() => setShowRoleModal(false)}
             >
               <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-                <Text style={styles.modalTitle}>Select Role</Text>
+                <Text style={styles.modalTitle}>{t("register.selectRoleTitle")}</Text>
                 {roleOptions.map((option) => (
                   <TouchableOpacity
                     key={option.value}
@@ -179,7 +181,7 @@ export default function RegisterScreen({ navigation }) {
                   style={[styles.button, { marginTop: 16, backgroundColor: colors.textSecondary }]}
                   onPress={() => setShowRoleModal(false)}
                 >
-                  <Text style={styles.buttonText}>Close</Text>
+                  <Text style={styles.buttonText}>{t("register.closeButton")}</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -188,7 +190,7 @@ export default function RegisterScreen({ navigation }) {
             <Icon name="lock" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder={t("register.passwordPlaceholder")}
               placeholderTextColor={colors.placeholder}
               secureTextEntry={!showPassword}
               value={password}
@@ -202,7 +204,7 @@ export default function RegisterScreen({ navigation }) {
             <Icon name="lock" size={20} color={colors.textSecondary} style={styles.icon} />
             <TextInput
               style={styles.input}
-              placeholder="Confirm Password"
+              placeholder={t("register.confirmPasswordPlaceholder")}
               placeholderTextColor={colors.placeholder}
               secureTextEntry={!showConfirmPassword}
               value={confirmPassword}
@@ -213,12 +215,12 @@ export default function RegisterScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Create Account</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t("register.button")}</Text>}
           </TouchableOpacity>
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-              <Text style={styles.link}>Login</Text>
+            <Text style={styles.footerText}>{t("register.hasAccount")}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Login") }>
+              <Text style={styles.link}>{t("register.login")}</Text>
             </TouchableOpacity>
           </View>
         </View>

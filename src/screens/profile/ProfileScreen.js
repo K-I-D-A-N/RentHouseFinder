@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import useAuth from "../../hooks/useAuth";
@@ -7,13 +8,20 @@ import useTheme from "../../hooks/useTheme";
 import { saveProfileImage } from "../../services/storage";
 
 export default function ProfileScreen({ navigation }) {
+  const { t } = useTranslation();
   const { user, role, logout, updateUserProfile } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigation.reset({ index: 0, routes: [{ name: "Auth" }] });
+  };
+
   const { colors } = useTheme();
   const [uploading, setUploading] = useState(false);
   const [profileImage, setProfileImage] = useState(user?.profile_image || null);
-  const name = user?.full_name || user?.name || user?.username || "No name available";
-  const email = user?.email || "No email available";
-  const phone = user?.phone || user?.mobile || "No phone available";
+  const name = user?.full_name || user?.name || user?.username || t("profile.noName");
+  const email = user?.email || t("profile.noEmail");
+  const phone = user?.phone || user?.mobile || t("profile.noPhone");
   const initial = name?.charAt(0)?.toUpperCase() || "?";
   const roleKey = role?.toLowerCase();
   const isLandlord = roleKey === "landlord";
@@ -27,9 +35,9 @@ export default function ProfileScreen({ navigation }) {
       navigation.navigate("MyListings");
     } else {
       Alert.alert(
-        "Register as Landlord",
-        "To post properties, please register as a landlord first.",
-        [{ text: "OK" }]
+        t("profile.landlordOnly.title"),
+        t("profile.landlordOnly.message"),
+        [{ text: t("profile.imageSource.cancel") }]
       );
     }
   };
@@ -44,7 +52,7 @@ export default function ProfileScreen({ navigation }) {
       if (useCamera) {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (permission.status !== "granted") {
-          Alert.alert("Permission", "Camera permission is required.");
+          Alert.alert(t("profile.permission.title"), t("profile.permission.camera"));
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -55,7 +63,7 @@ export default function ProfileScreen({ navigation }) {
       } else {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permission.status !== "granted") {
-          Alert.alert("Permission", "Gallery permission is required.");
+          Alert.alert(t("profile.permission.title"), t("profile.permission.gallery"));
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -71,7 +79,7 @@ export default function ProfileScreen({ navigation }) {
       }
     } catch (error) {
       console.error("Image picker error:", error);
-      Alert.alert("Error", "Failed to pick image.");
+      Alert.alert(t("profile.permission.title"), t("profile.uploadFailed"));
     }
   };
 
@@ -99,10 +107,10 @@ export default function ProfileScreen({ navigation }) {
         await saveProfileImage(userId, asset.uri);
       }
 
-      Alert.alert("Success", "Profile image updated.");
+      Alert.alert(t("profile.uploadSuccess.title"), t("profile.uploadSuccess.message"));
     } catch (error) {
       console.error("Upload failed:", error);
-      Alert.alert("Upload Failed", error.message || "Unable to upload profile image.");
+      Alert.alert(t("profile.uploadFailed"), error.message || t("profile.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -110,12 +118,12 @@ export default function ProfileScreen({ navigation }) {
 
   const showImageOptions = () => {
     Alert.alert(
-      "Choose Image Source",
-      "Select where to upload your profile picture from",
+      t("profile.imageSource.title"),
+      t("profile.imageSource.message"),
       [
-        { text: "Camera", onPress: () => pickImage(true) },
-        { text: "Gallery", onPress: () => pickImage(false) },
-        { text: "Cancel", style: "cancel" },
+        { text: t("profile.imageSource.camera"), onPress: () => pickImage(true) },
+        { text: t("profile.imageSource.gallery"), onPress: () => pickImage(false) },
+        { text: t("profile.imageSource.cancel"), style: "cancel" },
       ]
     );
   };
@@ -155,8 +163,8 @@ export default function ProfileScreen({ navigation }) {
               <Ionicons name="home-outline" size={22} color={colors.primary} />
             </View>
             <View style={styles.optionText}>
-              <Text style={styles.optionTitle}>My Listings</Text>
-              <Text style={styles.optionSubtitle}>Manage your properties</Text>
+              <Text style={styles.optionTitle}>{t("profile.myListings")}</Text>
+              <Text style={styles.optionSubtitle}>{t("profile.myListingsSubtitle")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -168,8 +176,8 @@ export default function ProfileScreen({ navigation }) {
               <Ionicons name="calendar-outline" size={22} color="#34c759" />
             </View>
             <View style={styles.optionText}>
-              <Text style={styles.optionTitle}>My Bookings</Text>
-              <Text style={styles.optionSubtitle}>View your rented properties</Text>
+              <Text style={styles.optionTitle}>{t("profile.myBookings")}</Text>
+              <Text style={styles.optionSubtitle}>{t("profile.myBookingsSubtitle")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -180,19 +188,19 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons name="settings-outline" size={22} color="#3a7bff" />
           </View>
           <View style={styles.optionText}>
-            <Text style={styles.optionTitle}>Settings</Text>
-            <Text style={styles.optionSubtitle}>App preferences</Text>
+            <Text style={styles.optionTitle}>{t("profile.settings")}</Text>
+            <Text style={styles.optionSubtitle}>{t("profile.settingsSubtitle")}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionItem} onPress={logout}>
+        <TouchableOpacity style={styles.optionItem} onPress={handleLogout}>
           <View style={[styles.optionIcon, { backgroundColor: "rgba(231,76,60,0.12)" }]}> 
             <Ionicons name="log-out-outline" size={22} color="#e74c3c" />
           </View>
           <View style={styles.optionText}>
-            <Text style={styles.optionTitle}>Logout</Text>
-            <Text style={styles.optionSubtitle}>Sign out of your account</Text>
+            <Text style={styles.optionTitle}>{t("profile.logout")}</Text>
+            <Text style={styles.optionSubtitle}>{t("profile.logoutSubtitle")}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
@@ -200,10 +208,10 @@ export default function ProfileScreen({ navigation }) {
 
       {!isLandlord && (
         <View style={styles.ctaCard}>
-          <Text style={styles.ctaTitle}>Want to list your property?</Text>
-          <Text style={styles.ctaSubtitle}>Reach thousands of potential buyers and renters</Text>
+          <Text style={styles.ctaTitle}>{t("profile.ctaTitle")}</Text>
+          <Text style={styles.ctaSubtitle}>{t("profile.ctaSubtitle")}</Text>
           <TouchableOpacity style={styles.ctaButton} onPress={handleListingsPress}>
-            <Text style={styles.ctaButtonText}>Post Property</Text>
+            <Text style={styles.ctaButtonText}>{t("profile.postProperty")}</Text>
           </TouchableOpacity>
         </View>
       )}
