@@ -7,56 +7,56 @@ export function getPrimaryImageUrl(listing) {
     console.log("getPrimaryImageUrl - listing is null/undefined");
     return null;
   }
-  
-  // ALWAYS log the actual listing data
-  console.log("getPrimaryImageUrl - FULL LISTING DATA:", JSON.stringify(listing, null, 2).substring(0, 2000));
-  
-  // Check primary_image - it might be an object/array/string/null
-  console.log("getPrimaryImageUrl - primary_image value:", listing.primary_image, "type:", typeof listing.primary_image);
-  
-  if (listing.primary_image) {
-    const result = extractImageFromField(listing.primary_image);
-    if (result) {
-      console.log("getPrimaryImageUrl - primary_image extracted:", { input: listing.primary_image, output: result });
-      return result;
+
+  const imageKeys = [
+    "primary_image",
+    "primary_image_url",
+    "primaryImage",
+    "image_url",
+    "image",
+    "cover_image",
+    "coverImage",
+    "thumbnail",
+    "photo_url",
+    "photo",
+    "featured_image",
+    "featuredImage",
+  ];
+
+  for (const key of imageKeys) {
+    if (listing[key]) {
+      const result = extractImageFromField(listing[key]);
+      if (result) {
+        console.log(`getPrimaryImageUrl - found image for key ${key}:`, { output: result });
+        return result;
+      }
     }
-  }
-  
-  // prefer explicit primary image fields if present
-  const primaryDirect = listing.primary_image_url || listing.primaryImage;
-  if (primaryDirect && typeof primaryDirect === "string") {
-    const result = normalizeImageUrl(primaryDirect);
-    console.log("getPrimaryImageUrl - primaryDirect found:", { primaryDirect, result });
-    return result;
-  }
-  
-  // prefer explicit top-level fields
-  const direct = listing.image_url || listing.image || listing.cover_image;
-  if (direct && typeof direct === "string") {
-    const result = normalizeImageUrl(direct);
-    console.log("getPrimaryImageUrl - direct found:", { field: direct, result });
-    return result;
   }
 
-  // handle images array (backend format: { id, image_url, is_primary })
-  const imgs = Array.isArray(listing.images) ? listing.images : null;
-  if (imgs && imgs.length > 0) {
-    console.log("getPrimaryImageUrl - images array found:", imgs.length);
-    const primary = imgs.find((i) => i && (i.is_primary === true || i.is_primary === "true"));
-    const src = primary?.image_url || primary?.url || primary?.image || primary?.path;
-    if (src && typeof src === "string") {
-      const result = normalizeImageUrl(src);
-      console.log("getPrimaryImageUrl - primary image from array:", { src, result });
-      return result;
+  const arrayKeys = ["images", "photos", "gallery", "media", "attachments", "property_images", "listing_images"];
+  for (const key of arrayKeys) {
+    const arrayValue = Array.isArray(listing[key]) ? listing[key] : null;
+    if (!arrayValue || !arrayValue.length) continue;
+
+    console.log(`getPrimaryImageUrl - scanning image array for key ${key}:`, arrayValue.length);
+
+    const primaryItem = arrayValue.find((item) =>
+      item && (item.is_primary === true || item.is_primary === "true" || item.selected === true || item.default === true || item.main === true)
+    );
+    if (primaryItem) {
+      const result = extractImageFromField(primaryItem);
+      if (result) {
+        console.log(`getPrimaryImageUrl - primary item from ${key}:`, { result });
+        return result;
+      }
     }
-    
-    // fallback to first image
-    const first = imgs[0];
-    const firstSrc = first?.image_url || first?.url || first?.image || first?.uri || first;
-    if (firstSrc && typeof firstSrc === "string") {
-      const result = normalizeImageUrl(firstSrc);
-      console.log("getPrimaryImageUrl - first image from array:", { firstSrc, result });
-      return result;
+
+    for (const item of arrayValue) {
+      const result = extractImageFromField(item);
+      if (result) {
+        console.log(`getPrimaryImageUrl - fallback item from ${key}:`, { result });
+        return result;
+      }
     }
   }
 
@@ -67,37 +67,68 @@ export function getPrimaryImageUrl(listing) {
 // Extract image URL from various field types (object, array, string)
 function extractImageFromField(field) {
   if (!field) return null;
-  
-  // If it's a string, normalize it
+
   if (typeof field === "string") {
     return normalizeImageUrl(field);
   }
-  
-  // If it's an object, try common image field names
-  if (typeof field === "object" && !Array.isArray(field)) {
-    const url = field.url || field.image || field.image_url || field.path || field.src || field.uri;
-    if (url && typeof url === "string") {
-      console.log("extractImageFromField - found URL in object:", { url });
-      return normalizeImageUrl(url);
+
+  if (Array.isArray(field)) {
+    for (const candidate of field) {
+      const result = extractImageFromField(candidate);
+      if (result) return result;
     }
+    return null;
   }
-  
-  // If it's an array, get the first item's URL
-  if (Array.isArray(field) && field.length > 0) {
-    const firstItem = field[0];
-    if (typeof firstItem === "string") {
-      console.log("extractImageFromField - found URL in array:", { url: firstItem });
-      return normalizeImageUrl(firstItem);
-    }
-    if (typeof firstItem === "object") {
-      const url = firstItem.url || firstItem.image || firstItem.image_url || firstItem.path || firstItem.src || firstItem.uri;
-      if (url && typeof url === "string") {
-        console.log("extractImageFromField - found URL in array object:", { url });
+
+  if (typeof field === "object") {
+    const candidates = [
+      field.url,
+      field.image,
+      field.image_url,
+      field.path,
+      field.src,
+      field.uri,
+      field.thumbnail,
+      field.thumb,
+      field.original,
+      field.preview,
+      field.photo,
+      field.photo_url,
+      field.image_uri,
+      field.imagePath,
+    ];
+    for (const url of candidates) {
+      if (typeof url === "string" && url.trim()) {
+        console.log("extractImageFromField - found URL in object:", { url });
         return normalizeImageUrl(url);
       }
     }
+
+    if (field.data) {
+      const result = extractImageFromField(field.data);
+      if (result) return result;
+    }
+    if (field.attributes) {
+      const result = extractImageFromField(field.attributes);
+      if (result) return result;
+    }
+    if (field.image && typeof field.image === "object") {
+      const result = extractImageFromField(field.image);
+      if (result) return result;
+    }
+    if (field.url && typeof field.url === "object") {
+      const result = extractImageFromField(field.url);
+      if (result) return result;
+    }
+
+    for (const key of Object.keys(field)) {
+      if (typeof field[key] === "object") {
+        const result = extractImageFromField(field[key]);
+        if (result) return result;
+      }
+    }
   }
-  
+
   return null;
 }
 
@@ -154,4 +185,16 @@ export function getOwnerField(listing, field) {
   const val = owner[field];
   if (val == null || val === "" || val === "Unavailable" || val === "Host" || val === "N/A") return "Not available";
   return String(val);
+}
+
+// Sort listings putting active featured listings first
+export function sortByFeatured(listings) {
+  if (!Array.isArray(listings)) return listings || [];
+  const now = new Date();
+  return [...listings].sort((a, b) => {
+    const aFeatured = Boolean(a?.is_featured) && (!a?.featured_until || new Date(a.featured_until) > now);
+    const bFeatured = Boolean(b?.is_featured) && (!b?.featured_until || new Date(b.featured_until) > now);
+    if (aFeatured === bFeatured) return 0;
+    return aFeatured ? -1 : 1;
+  });
 }

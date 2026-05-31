@@ -264,10 +264,11 @@ export default function PaymentScreen() {
 
   console.log("DEBUG PAYMENT:", { pricePerDay, totalDays, subtotal, deposit, commission, total });
 
-  const propertyImageSource = listing ? getImageSourceForListing(listing) : null;
-  const ownerName  = getOwnerField(listing, "full_name");
-  const ownerPhone = getOwnerField(listing, "phone");
-  const ownerEmail = getOwnerField(listing, "email");
+  const listingSource = listing || booking?.listing || booking?.property || booking;
+  const propertyImageSource = getImageSourceForListing(listingSource);
+  const ownerName  = getOwnerField(listingSource, "full_name");
+  const ownerPhone = getOwnerField(listingSource, "phone");
+  const ownerEmail = getOwnerField(listingSource, "email");
 
   // ---------------------------------------------------------------------------
   // UI

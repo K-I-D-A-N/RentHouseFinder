@@ -5,7 +5,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
 import { getCategories } from "../../api/categoryApi";
-import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import { getPrimaryImageUrl, sortByFeatured } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
 
 const defaultPropertyTypes = [{ name: "All Types", value: "All Types" }];
@@ -39,7 +39,7 @@ export default function SearchScreen({ navigation }) {
       const response = await getProperties(params);
       const list = normalizeList(response.data);
       console.log("Fetched properties count:", list.length, "Sample:", list[0]);
-      setProperties(list);
+      setProperties(sortByFeatured(list));
     } catch (error) {
       console.error("Failed to load properties", error);
       setProperties([]);
@@ -173,7 +173,7 @@ export default function SearchScreen({ navigation }) {
 
     return (
       <TouchableOpacity style={styles.resultCard} onPress={() => navigation.navigate("HomeTab", { screen: "PropertyDetailScreen", params: { id: item.id, slug: item.slug } })}>
-        <ImageWithFallback sourceUri={imageUrl} style={styles.resultImage} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.resultImage} isFeatured={item.is_featured} featuredUntil={item.featured_until} />
         <View style={styles.resultBody}>
           <Text style={styles.resultPrice}>ETB {Number(price).toLocaleString()}/month</Text>
           <Text style={styles.resultLocation}>{itemLocation}</Text>

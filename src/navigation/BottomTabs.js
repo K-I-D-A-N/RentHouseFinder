@@ -14,6 +14,7 @@ import PropertyDetailScreen from "../screens/home/PropertyDetailScreen";
 import SettingsScreen from "../screens/profile/SettingsScreen";
 import MyListingsScreen from "../screens/property/MyListingsScreen";
 import EditPropertyScreen from "../screens/property/EditPropertyScreen";
+import PromotionPaymentScreen from "../screens/property/PromotionPaymentScreen";
 import MyBookingsScreen from "../screens/booking/MyBookingsScreen";
 import PaymentScreen from "../screens/booking/PaymentScreen";
 import BookingScreen from "../screens/booking/BookingScreen";
@@ -41,6 +42,7 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="MyListings" component={MyListingsScreen} />
       <ProfileStack.Screen name="MyBookings" component={MyBookingsScreen} />
       <ProfileStack.Screen name="PaymentScreen" component={PaymentScreen} />
+      <ProfileStack.Screen name="PromotionPaymentScreen" component={PromotionPaymentScreen} />
       <ProfileStack.Screen name="PropertyDetailScreen" component={PropertyDetailScreen} />
       <ProfileStack.Screen name="EditProperty" component={EditPropertyScreen} />
       <ProfileStack.Screen name="EditListingScreen" component={EditListingScreen} />

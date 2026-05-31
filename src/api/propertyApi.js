@@ -83,4 +83,7 @@ export const uploadListingImage = async (listingId, imageUri, imageName, imageTy
 
 export const updateProperty = (id, data) => api.put(`/listings/${id}/update/`, data);
 export const deleteProperty = (id) => api.delete(`/listings/${id}/delete/`);
+// Promote a listing (premium placement)
+export const promoteListing = (listingId, duration_days) =>
+  api.post(`/listings/${listingId}/promote/`, { duration_days });
 

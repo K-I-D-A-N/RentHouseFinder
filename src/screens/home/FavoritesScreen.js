@@ -13,7 +13,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
-import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import { getPrimaryImageUrl, sortByFeatured } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
 
 const FAVORITES_KEY = "betrent_favorite_ids";
@@ -53,12 +53,8 @@ export default function FavoritesScreen({ navigation }) {
           ]);
           setFavoriteIds(ids);
           const data = response.data;
-          const items = Array.isArray(data)
-            ? data
-            : Array.isArray(data?.items)
-            ? data.items
-            : [];
-          setAllProperties(items);
+          const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+          setAllProperties(sortByFeatured(items));
         } catch (error) {
           console.error("Failed to load favorites", error);
         } finally {
@@ -109,7 +105,7 @@ export default function FavoritesScreen({ navigation }) {
           })
         }
       >
-        <ImageWithFallback sourceUri={imageUrl} style={styles.image} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.image} isFeatured={item.is_featured} featuredUntil={item.featured_until} />
 
         {/* Heart button on the card image — same as HomeScreen */}
         <TouchableOpacity

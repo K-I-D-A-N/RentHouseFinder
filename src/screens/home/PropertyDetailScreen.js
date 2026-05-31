@@ -262,7 +262,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
         showsHorizontalScrollIndicator={false}
         keyExtractor={(_, index) => `hero-${index}`}
         renderItem={({ item }) => (
-          <ImageWithFallback sourceUri={item} style={styles.heroImage} />
+          <ImageWithFallback sourceUri={item} style={styles.heroImage} isFeatured={property?.is_featured} featuredUntil={property?.featured_until} />
         )}
         style={styles.gallery}
       />

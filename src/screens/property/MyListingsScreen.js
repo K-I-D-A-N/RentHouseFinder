@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
-  Image,
   Alert,
   Pressable,
   Animated,
@@ -21,6 +20,8 @@ import { getMyRequests, updateBookingStatus } from "../../api/bookingApi";
 import { useFocusEffect } from "@react-navigation/native";
 import { getPrimaryImageUrl } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
+import { isLandlord } from "../../utils/roleUtils";
+import { sortByFeatured } from "../../utils/dataHelpers";
 
 export default function MyListingsScreen({ navigation }) {
   const { t } = useTranslation();
@@ -31,8 +32,9 @@ export default function MyListingsScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [updatingId, setUpdatingId] = useState(null); // booking id being updated
   const { colors } = useTheme();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
 
   // Listings fetch
   const loadUserProperties = useCallback(async () => {
@@ -45,7 +47,7 @@ export default function MyListingsScreen({ navigation }) {
         : Array.isArray(data?.items)
         ? data.items
         : [];
-      setProperties(items);
+      setProperties(sortByFeatured(items));
     } catch (error) {
       console.error("Failed to load user properties", error);
       Alert.alert(t("myListings.delete.errorTitle"), t("myListings.delete.error"));
@@ -153,12 +155,15 @@ export default function MyListingsScreen({ navigation }) {
     }
   };
 
+
   const renderItem = ({ item }) => {
     const scale = new Animated.Value(1);
     const onPressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
     const onPressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
 
     const imageUrl = getPrimaryImageUrl(item) || "";
+    const now = new Date();
+    const isCurrentlyFeatured = Boolean(item.is_featured) && (!item.featured_until || new Date(item.featured_until) > now);
 
     const isVerified = item.is_verified || item.verified || false;
     // Show price: prefer per month, then week, then day
@@ -177,11 +182,17 @@ export default function MyListingsScreen({ navigation }) {
         onPressOut={onPressOut}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >
-        <ImageWithFallback sourceUri={imageUrl} style={styles.propertyImage} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.propertyImage} isFeatured={item.is_featured} featuredUntil={item.featured_until} />
         <View style={styles.badgeRow}>
           {isVerified && (
             <View style={styles.verifiedBadge}>
               <Text style={styles.verifiedText}>{t("myListings.verified")}</Text>
+            </View>
+          )}
+          {isCurrentlyFeatured && (
+            <View style={[styles.verifiedBadge, { backgroundColor: "rgba(245,166,35,0.95)" }]}
+            >
+              <Text style={styles.verifiedText}>⭐ Featured</Text>
             </View>
           )}
           <View style={styles.actionButtons}>
@@ -203,6 +214,15 @@ export default function MyListingsScreen({ navigation }) {
             >
               <Ionicons name="trash" size={16} color="#fff" />
             </TouchableOpacity>
+            {/* Promote button for landlords when not featured */}
+                    {isLandlord(role) && !isCurrentlyFeatured && (
+              <TouchableOpacity
+                style={styles.promoteButton}
+                onPress={() => navigation.navigate("PromotionPaymentScreen", { listing: item, listing_id: item.id })}
+              >
+                <Text style={styles.promoteButtonText}>⭐ Promote</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         <View style={styles.cardContent}>
@@ -295,9 +315,9 @@ export default function MyListingsScreen({ navigation }) {
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
             <View style={styles.requestCard}>
-              <ImageWithFallback sourceUri={getPrimaryImageUrl(item.listing) || ""} style={styles.requestImage} />
+              <ImageWithFallback sourceUri={getPrimaryImageUrl(item.listing || item.property || item) || ""} style={styles.requestImage} isFeatured={(item.listing || item.property || item)?.is_featured} featuredUntil={(item.listing || item.property || item)?.featured_until} />
               <View style={styles.requestContent}>
-                <Text style={styles.requestTitle}>{item.listing?.title || "Untitled"}</Text>
+                <Text style={styles.requestTitle}>{(item.listing || item.property || item)?.title || (item.listing || item.property || item)?.name || "Untitled"}</Text>
                 <Text style={styles.requestRenter}>{item.renter_name || item.renter?.name || "Unknown renter"}</Text>
                 <Text style={styles.requestEmail}>{item.renter_email || item.renter?.email || ""}</Text>
                 <Text style={styles.requestDates}>
@@ -609,6 +629,16 @@ const createStyles = (colors) =>
       justifyContent: "center",
       alignItems: "center",
     },
+    promoteButton: {
+      marginLeft: 8,
+      backgroundColor: "rgba(245,166,35,0.95)",
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    promoteButtonText: { color: "#fff", fontWeight: "700" },
     cardContent: {
       padding: 12,
     },

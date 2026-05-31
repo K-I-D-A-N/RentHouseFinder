@@ -18,6 +18,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import useTheme from "../../hooks/useTheme";
 import { getProperties } from "../../api/propertyApi";
+import { sortByFeatured } from "../../utils/dataHelpers";
 import { getCategories } from "../../api/categoryApi";
 import { getPrimaryImageUrl } from "../../utils/dataHelpers";
 import ImageWithFallback from "../../components/ImageWithFallback";
@@ -85,11 +86,8 @@ export default function HomeScreen({ navigation }) {
       const response = await getProperties(params);
       const data = response.data;
       const items = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.items)
-        ? data.items
-        : [];
-      setProperties(items);
+        ? data : Array.isArray(data?.items) ? data.items : [];
+      setProperties(sortByFeatured(items));
     } catch (error) {
       console.error("Failed to load properties", error);
       setProperties([]);
@@ -231,7 +229,7 @@ export default function HomeScreen({ navigation }) {
         onPressOut={onPressOut}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >
-        <ImageWithFallback sourceUri={imageUrl} style={styles.propertyImage} />
+        <ImageWithFallback sourceUri={imageUrl} style={styles.propertyImage} isFeatured={item.is_featured} featuredUntil={item.featured_until} />
 
         <View style={styles.badgeRow}>
           {isVerified && (
