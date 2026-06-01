@@ -181,7 +181,7 @@ const createStyles = (colors) =>
       shadowRadius: 24,
       elevation: 6,
     },
-    image: { width: "100%", height: 180 },
+    image: { width: "100%", minHeight: 180, backgroundColor: colors.muted },
     heartButton: {
       position: "absolute",
       top: 14,

@@ -391,7 +391,7 @@ const createStyles = (colors) =>
       overflow: "hidden",
     },
     cardPressed: { transform: [{ scale: 0.98 }] },
-    propertyImage: { width: "100%", height: 220 },
+    propertyImage: { width: "100%", minHeight: 180, backgroundColor: colors.muted },
     badgeRow: {
       position: "absolute",
       top: 18,

@@ -278,7 +278,7 @@ export default function AddPropertyScreen({ navigation }) {
 
   const renderImageThumbnail = ({ item }) => (
     <View style={styles.thumbnailContainer}>
-      <Image source={{ uri: item.uri }} style={styles.thumbnail} />
+      <Image source={{ uri: item.uri }} style={styles.thumbnail} resizeMode="contain" />
       <TouchableOpacity style={styles.removeButton} onPress={() => removeImage(item.id)}>
         <Ionicons name="close-circle" size={24} color="#e74c3c" />
       </TouchableOpacity>

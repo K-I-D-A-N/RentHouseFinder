@@ -183,7 +183,7 @@ export default function EditListingScreen({ navigation, route }) {
                   key={idx}
                   source={{ uri: uri }}
                   style={styles.imageThumb}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               );
             })}

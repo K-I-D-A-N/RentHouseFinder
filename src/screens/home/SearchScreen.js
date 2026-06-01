@@ -462,7 +462,8 @@ const createStyles = (colors) => StyleSheet.create({
   },
   resultImage: {
     width: 110,
-    height: 110,
+    minHeight: 110,
+    backgroundColor: colors.muted,
   },
   resultBody: {
     flex: 1,

@@ -454,7 +454,7 @@ const createStyles = (colors) =>
     },
     requestImage: {
       width: 80,
-      height: 80,
+      minHeight: 80,
       borderRadius: 8,
       marginRight: 12,
       backgroundColor: colors.muted,
@@ -586,7 +586,7 @@ const createStyles = (colors) =>
     },
     propertyImage: {
       width: "100%",
-      height: 200,
+      minHeight: 180,
       backgroundColor: colors.muted,
     },
     badgeRow: {

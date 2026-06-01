@@ -139,7 +139,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.avatarContainer}>
           <View style={styles.avatarCircle}>
             {displayedProfileImage ? (
-              <Image source={{ uri: displayedProfileImage }} style={styles.avatarImage} resizeMode="cover" />
+              <Image source={{ uri: displayedProfileImage }} style={styles.avatarImage} resizeMode="contain" />
             ) : (
               <Text style={styles.avatarInitial}>{initial}</Text>
             )}
