@@ -41,8 +41,9 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const { t } = useTranslation();
   const { slug, id, image: routeImage, title: routeTitle, pricePerDay: routePricePerDay } = route.params || {};
   const { colors } = useTheme();
-  const { role } = useAuth();
+  const { role, canViewPremiumListings } = useAuth();
   const [property, setProperty] = useState(null);
+  const [requiresPremium, setRequiresPremium] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +65,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
       const detailKey = slug || id;
       const response = await api.get(`/listings/${detailKey}/`);
       const propertyData = response.data;
+      if (propertyData?.requires_premium && !canViewPremiumListings) {
+        setRequiresPremium(true);
+        setProperty(null);
+        setReviews([]);
+        return;
+      }
+      setRequiresPremium(false);
       setProperty(propertyData);
       const reviewListingId = id || propertyData.id || propertyData.pk;
 
@@ -88,14 +96,22 @@ export default function PropertyDetailScreen({ route, navigation }) {
         setReviews([]);
       }
     } catch (fetchError) {
-      console.error("Property detail fetch failed", fetchError.response?.data || fetchError.message || fetchError);
-      setError(t("propertyDetail.error"));
-      setProperty(null);
+      const responseData = fetchError.response?.data;
+      if (responseData?.requires_premium) {
+        setRequiresPremium(true);
+        setProperty(null);
+        setError("");
+      } else {
+        console.error("Property detail fetch failed", fetchError.response?.data || fetchError.message || fetchError);
+        setError(t("propertyDetail.error"));
+        setProperty(null);
+        setRequiresPremium(false);
+      }
       setReviews([]);
     } finally {
       setLoading(false);
     }
-  }, [slug, id]);
+  }, [slug, id, canViewPremiumListings]);
 
   useFocusEffect(
     useCallback(() => {
@@ -107,6 +123,26 @@ export default function PropertyDetailScreen({ route, navigation }) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}> 
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (requiresPremium) {
+    return (
+      <View style={[styles.centered, { backgroundColor: colors.background, padding: 24 }]}>
+        <Icon name="lock" size={64} color={colors.primary} />
+        <Text style={[styles.errorText, { color: colors.text, marginTop: 16, textAlign: "center" }]}>
+          Premium Listing Locked
+        </Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary, marginTop: 8, textAlign: "center" }]}>
+          Upgrade to premium to view this listing.
+        </Text>
+        <TouchableOpacity
+          style={[styles.bookButton, { backgroundColor: colors.primary, marginTop: 24, paddingHorizontal: 24 }]}
+          onPress={() => navigation.navigate("Settings")}
+        >
+          <Text style={styles.bookButtonText}>Upgrade</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -304,9 +340,6 @@ export default function PropertyDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.ownerDetails}>
               <Text style={[styles.ownerName, { color: colors.text }]}>{ownerName}</Text>
-                {role?.toLowerCase() !== "customer" && ownerEmail ? (
-                  <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>{t("propertyDetail.email")}: {ownerEmail}</Text>
-                ) : null}
             </View>
           </View>
         </View>

@@ -34,6 +34,7 @@
     "emailPlaceholder": "Email",
     "passwordPlaceholder": "Password",
     "button": "Login",
+    "forgotPassword": "Forgot password?",
     "noAccount": "Don't have an account?",
     "register": "Register",
     "validation": {
@@ -71,6 +72,61 @@
       "loginTitle": "Login Failed",
       "registerTitle": "Registration Failed"
     }
+  },
+  "forgotPassword": {
+    "title": "Forgot password",
+    "subtitle": "Enter your email to receive a password reset code.",
+    "emailPlaceholder": "Email",
+    "button": "Send reset code",
+    "backToLogin": "Back to login",
+    "validation": {
+      "title": "Validation",
+      "emailRequired": "Please enter your email address."
+    },
+    "success": {
+      "title": "Reset email sent",
+      "message": "Check your email for the password reset code."
+    },
+    "error": {
+      "title": "Unable to send reset email"
+    }
+  },
+  "resetPassword": {
+    "title": "Reset password",
+    "subtitle": "Enter your email, reset code, and new password.",
+    "emailPlaceholder": "Email",
+    "codePlaceholder": "Reset code",
+    "newPasswordPlaceholder": "New password",
+    "confirmPasswordPlaceholder": "Confirm password",
+    "button": "Reset password",
+    "backToLogin": "Back to login",
+    "validation": {
+      "title": "Validation",
+      "fillAll": "Please fill in all fields.",
+      "passwordLength": "Password must be at least 8 characters.",
+      "passwordMatch": "Passwords do not match."
+    },
+    "success": {
+      "title": "Password reset successful",
+      "message": "You can now log in with your new password."
+    },
+    "error": {
+      "title": "Unable to reset password"
+    }
+  },
+  "otp": {
+    "title": "Verify Your Email",
+    "subtitle": "We've sent a 6-digit code to your email. Enter it below to verify your account.",
+    "inputPlaceholder": "Enter 6-digit OTP",
+    "verifyButton": "Verify OTP",
+    "resendButton": "Resend OTP",
+    "resendCountdown": "Resend OTP in {{seconds}}s",
+    "errorTitle": "OTP Error",
+    "errorInvalid": "Invalid OTP. Please try again.",
+    "resendSuccessTitle": "OTP Resent",
+    "resendSuccessMessage": "A new OTP has been sent to your email.",
+    "resendError": "Failed to resend OTP. Please try again.",
+    "resendErrorTitle": "Resend Failed"
   },
   "home": {
     "heading": "Find Your Home",

@@ -1,5 +1,6 @@
-﻿import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, ActivityIndicator } from "react-native";
+﻿import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Alert, ActivityIndicator, RefreshControl } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -9,7 +10,8 @@ import { saveProfileImage } from "../../services/storage";
 
 export default function ProfileScreen({ navigation }) {
   const { t } = useTranslation();
-  const { user, role, logout, updateUserProfile } = useAuth();
+  const { user, role, logout, updateUserProfile, fetchCurrentUser, emailVerified, accountStatus, isPremiumCustomer, premiumUntil, canPostListings, canViewPremiumListings } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -29,6 +31,18 @@ export default function ProfileScreen({ navigation }) {
   useEffect(() => {
     setProfileImage(user?.profile_image || null);
   }, [user?.profile_image]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchCurrentUser?.();
+    }, [fetchCurrentUser])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCurrentUser?.();
+    setRefreshing(false);
+  };
 
   const handleListingsPress = () => {
     if (isLandlord) {
@@ -132,8 +146,33 @@ export default function ProfileScreen({ navigation }) {
   const styles = createStyles(colors);
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <Text style={styles.screenTitle}>Profile</Text>
+
+      <View style={styles.badgesRow}>
+        <View style={[styles.badge, { backgroundColor: isLandlord ? "rgba(255,107,0,0.12)" : "rgba(58,123,255,0.12)" }]}>
+          <Text style={[styles.badgeText, { color: isLandlord ? colors.primary : "#3a7bff" }]}>
+            {isLandlord ? "Landlord" : "Customer"}
+          </Text>
+        </View>
+        {isPremiumCustomer ? (
+          <View style={[styles.badge, { backgroundColor: "rgba(245,166,35,0.15)" }]}>
+            <Text style={[styles.badgeText, { color: "#f5a623" }]}>Premium</Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.statusCard}>
+        <Text style={styles.statusLine}>Email verified: {emailVerified ? "Yes" : "No"}</Text>
+        <Text style={styles.statusLine}>Account status: {accountStatus || "—"}</Text>
+        <Text style={styles.statusLine}>Can post listings: {canPostListings ? "Yes" : "No"}</Text>
+        <Text style={styles.statusLine}>Premium listings access: {canViewPremiumListings ? "Yes" : "No"}</Text>
+        {premiumUntil ? <Text style={styles.statusLine}>Premium until: {premiumUntil}</Text> : null}
+      </View>
 
       <TouchableOpacity style={styles.profileCard} onPress={showImageOptions} disabled={uploading}>
         <View style={styles.avatarContainer}>
@@ -231,6 +270,34 @@ const createStyles = (colors) => StyleSheet.create({
     fontWeight: "900",
     color: colors.text,
     marginBottom: 18,
+  },
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  statusCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statusLine: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 4,
   },
   profileCard: {
     flexDirection: "row",

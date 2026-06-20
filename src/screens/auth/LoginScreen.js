@@ -75,6 +75,9 @@ export default function LoginScreen({ navigation }) {
               <Icon name={showPassword ? "visibility" : "visibility-off"} size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
+          <TouchableOpacity style={styles.forgotButton} onPress={() => navigation.navigate("ForgotPassword")}> 
+            <Text style={styles.forgotText}>{t("login.forgotPassword") || "Forgot password?"}</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t("login.button")}</Text>}
           </TouchableOpacity>
@@ -177,5 +180,13 @@ const createStyles = (colors) => StyleSheet.create({
     marginLeft: 6,
     color: colors.primary,
     fontWeight: "bold",
+  },
+  forgotButton: {
+    alignSelf: "flex-end",
+    marginBottom: 14,
+  },
+  forgotText: {
+    color: colors.primary,
+    fontWeight: "700",
   },
 });

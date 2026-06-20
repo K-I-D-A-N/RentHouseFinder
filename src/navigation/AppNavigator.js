@@ -5,12 +5,23 @@ import AuthNavigator from "./AuthNavigator";
 import BottomTabs from "./BottomTabs";
 import SplashScreen from "../screens/auth/SplashScreen";
 import OnboardingScreen from "../screens/auth/OnboardingScreen";
+import OTPVerificationScreen from "../screens/auth/OTPVerificationScreen";
+import PaymentPendingScreen from "../screens/subscription/PaymentPendingScreen";
 import useAuth from "../hooks/useAuth";
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { token, initializing, hasSeenOnboarding } = useAuth();
+  const {
+    token,
+    initializing,
+    hasSeenOnboarding,
+    user,
+    requiresEmailVerification,
+    requiresPayment,
+    pendingTransactionId,
+    pendingAmount,
+  } = useAuth();
 
   if (initializing) {
     return (
@@ -26,6 +37,33 @@ export default function AppNavigator() {
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Auth" component={AuthNavigator} />
+      </Stack.Navigator>
+    );
+  }
+
+  if (requiresEmailVerification) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="OTPVerificationGate"
+          component={OTPVerificationScreen}
+          initialParams={{ email: user?.email }}
+        />
+      </Stack.Navigator>
+    );
+  }
+
+  if (requiresPayment) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="PaymentWaitingGate"
+          component={PaymentPendingScreen}
+          initialParams={{
+            transaction_id: pendingTransactionId,
+            amount: pendingAmount,
+          }}
+        />
       </Stack.Navigator>
     );
   }

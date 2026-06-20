@@ -6,12 +6,13 @@ import useAuth from "../../hooks/useAuth";
 import useTheme from "../../hooks/useTheme";
 import { normalizeEthiopianPhone, validateEthiopianPhone } from "../../services/validation";
 
-export default function RegisterScreen({ navigation }) {
+export default function RegisterScreen({ navigation, route }) {
   const { t } = useTranslation();
   const { register, login } = useAuth();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("251");
+  const incoming = route?.params?.registrationData || {};
+  const [fullName, setFullName] = useState(incoming.full_name || "");
+  const [email, setEmail] = useState(incoming.email || "");
+  const [phone, setPhone] = useState(incoming.phone || "251");
   const [phoneError, setPhoneError] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -68,38 +69,27 @@ export default function RegisterScreen({ navigation }) {
         email: trimmedEmail,
         phone,
         password: trimmedPassword,
-        password_confirm: confirmPassword.trim(),
+        password2: confirmPassword.trim(),
         role: selectedRole,
       };
-      console.log("REGISTER PAYLOAD:", payload);
-      const registerRes = await register(payload);
-      console.log("REGISTER RESPONSE:", registerRes);
-      // Auto-login after successful registration
-      try {
-        const loginPayload = {
-          email: trimmedEmail,
-          password: trimmedPassword,
-        };
-        const loginRes = await login(loginPayload);
-        console.log("LOGIN RESPONSE:", loginRes);
-        // Navigate to main app screen (adjust as needed)
-        navigation.replace("Home");
-      } catch (loginError) {
-        console.log("LOGIN ERROR:", loginError.response?.data || loginError.message);
-        Alert.alert(
-          "Login Failed",
-          typeof loginError.response?.data === "string"
-            ? loginError.response?.data
-            : JSON.stringify(loginError.response?.data || loginError.message)
-        );
+
+      if (selectedRole === "landlord") {
+        setLoading(false);
+        navigation.replace("PlanSelectionScreen", { registrationData: payload });
+        return;
       }
+
+      await register(payload);
+      navigation.replace("OTPVerification", { email: trimmedEmail, registrationData: payload });
     } catch (error) {
-      console.log("REGISTER ERROR:", error.response?.data || error.message);
+      const errorData = error.response?.data || error.message;
+      console.log("REGISTER ERROR FULL:", JSON.stringify(errorData, null, 2));
+      console.log("REGISTER ERROR STATUS:", error.response?.status);
       Alert.alert(
         "Registration Failed",
-        typeof error.response?.data === "string"
-          ? error.response?.data
-          : JSON.stringify(error.response?.data || error.message)
+        typeof errorData === "string"
+          ? errorData
+          : JSON.stringify(errorData)
       );
     } finally {
       setLoading(false);

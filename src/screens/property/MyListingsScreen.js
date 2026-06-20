@@ -19,6 +19,7 @@ import { getMyListings, deleteProperty } from "../../api/propertyApi";
 import { getMyRequests, updateBookingStatus } from "../../api/bookingApi";
 import { useFocusEffect } from "@react-navigation/native";
 import { getPrimaryImageUrl } from "../../utils/dataHelpers";
+import RenterContactSection from "../../components/booking/RenterContactSection";
 import ImageWithFallback from "../../components/ImageWithFallback";
 import { isLandlord } from "../../utils/roleUtils";
 import { sortByFeatured } from "../../utils/dataHelpers";
@@ -318,8 +319,7 @@ export default function MyListingsScreen({ navigation }) {
               <ImageWithFallback sourceUri={getPrimaryImageUrl(item.listing || item.property || item) || ""} style={styles.requestImage} isFeatured={(item.listing || item.property || item)?.is_featured} featuredUntil={(item.listing || item.property || item)?.featured_until} />
               <View style={styles.requestContent}>
                 <Text style={styles.requestTitle}>{(item.listing || item.property || item)?.title || (item.listing || item.property || item)?.name || "Untitled"}</Text>
-                <Text style={styles.requestRenter}>{item.renter_name || item.renter?.name || "Unknown renter"}</Text>
-                <Text style={styles.requestEmail}>{item.renter_email || item.renter?.email || ""}</Text>
+                <RenterContactSection booking={item} />
                 <Text style={styles.requestDates}>
                   {item.start_date} → {item.end_date}
                 </Text>

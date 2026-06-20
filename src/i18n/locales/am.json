@@ -34,6 +34,7 @@
     "emailPlaceholder": "ኢሜይል",
     "passwordPlaceholder": "የሚስጥር ቁጥር",
     "button": "ግባ",
+    "forgotPassword": "የሚስጥር ቁጥር ይረሳል?",
     "noAccount": "መለያ የለዎትም?",
     "register": "ይመዝገቡ",
     "validation": {
@@ -71,6 +72,61 @@
       "loginTitle": "መግባት አልተሳካም",
       "registerTitle": "ምዝገባ አልተሳካም"
     }
+  },
+  "forgotPassword": {
+    "title": "የሚስጥር ቁጥር ይረሳል",
+    "subtitle": "የይለፍ ቃል የማስወገጃ ኮድ ለለይቶ ኢሜይልዎን ያስገቡ።",
+    "emailPlaceholder": "ኢሜይል",
+    "button": "የማስወገጃ ኮድ ይላኩ",
+    "backToLogin": "ወደ ግባ ይመለሱ",
+    "validation": {
+      "title": "ማረጋገጫ",
+      "emailRequired": "እባክዎ ኢሜይል አድራሻዎን ያስገቡ።"
+    },
+    "success": {
+      "title": "የማስወገጃ ኢሜይል ተልኳል",
+      "message": "የይለፍ ቃል ለማስተካከል ኮድን በኢሜይልዎ ይመልከቱ።"
+    },
+    "error": {
+      "title": "የማስወገጃ ኢሜይል ማላክ አልተቻለም"
+    }
+  },
+  "resetPassword": {
+    "title": "የይለፍ ቃል ይዘጋ",
+    "subtitle": "ኢሜይልዎን፣ ኮድዎን እና አዲስ የይለፍ ቃልዎን ያስገቡ።",
+    "emailPlaceholder": "ኢሜይል",
+    "codePlaceholder": "የማስወገጃ ኮድ",
+    "newPasswordPlaceholder": "አዲስ የይለፍ ቃል",
+    "confirmPasswordPlaceholder": "የይለፍ ቃልን ያረጋግጡ",
+    "button": "የይለፍ ቃል ይዘጋ",
+    "backToLogin": "ወደ ግባ ይመለሱ",
+    "validation": {
+      "title": "ማረጋገጫ",
+      "fillAll": "እባክዎ ሁሉንም ቦታዎች ይሙሉ።",
+      "passwordLength": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች ይኖረዋል።",
+      "passwordMatch": "የይለፍ ቃሎቹ አይዛመዱም።"
+    },
+    "success": {
+      "title": "የይለፍ ቃል ተስተካክሏል",
+      "message": "እንደ እንግዲህ በአዲስ የይለፍ ቃል ማግኘት ይችላሉ።"
+    },
+    "error": {
+      "title": "የይለፍ ቃል ማዘጋጀት አልተቻለም"
+    }
+  },
+  "otp": {
+    "title": "ኢሜይልዎን ያረጋግጡ",
+    "subtitle": "የ6-አሃዝ ኮድ ወደ ኢሜይልዎ ልከናል። ስርዓትዎን ለማረጋገጥ ከዚህ በታች ያስገቡት።",
+    "inputPlaceholder": "የ6-አሃዝ OTP ያስገቡ",
+    "verifyButton": "OTP ያረጋግጡ",
+    "resendButton": "OTP ይልካሉ",
+    "resendCountdown": "በ{{seconds}}ሰከንድ ውስጥ OTP ይልካሉ",
+    "errorTitle": "OTP ስህተት",
+    "errorInvalid": "ልክ ያልሆነ OTP. እንደገና ይሞክሩ።",
+    "resendSuccessTitle": "OTP ተልክቷል",
+    "resendSuccessMessage": "አዲስ OTP ወደ ኢሜይልዎ ተልክቷል።",
+    "resendError": "OTPን እንደገና ለመላክ ሙከራ 失败. እንደገና ይሞክሩ።",
+    "resendErrorTitle": "እንደገና መላክ ሙከራ ሳቢ"
   },
   "home": {
     "heading": "ቤትዎን ያግኙ",
