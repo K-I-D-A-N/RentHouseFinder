@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../hooks/useTheme";
 import useAuth from "../hooks/useAuth";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "../screens/home/HomeScreen";
 import SearchScreen from "../screens/home/SearchScreen";
 import AddPropertyScreen from "../screens/property/AddPropertyScreen";
@@ -55,6 +56,7 @@ export default function BottomTabs() {
   const { role } = useAuth();
   const styles = createStyles(colors);
   const isLandlord = role === "landlord";
+  const insets = useSafeAreaInsets();
 
   function CustomTabBarButton({ children, onPress, style }) {
     return (
@@ -73,7 +75,10 @@ export default function BottomTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          { bottom: 0, height: (Platform.OS === "ios" ? 80 : 70) + insets.bottom, paddingBottom: insets.bottom },
+        ],
         tabBarIcon: ({ focused, color, size }) => {
           let iconName = "home-outline";
           if (route.name === "HomeTab") iconName = focused ? "home" : "home-outline";

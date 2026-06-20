@@ -1,16 +1,18 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, Modal } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import useAuth from "../../hooks/useAuth";
 import useTheme from "../../hooks/useTheme";
+import { normalizeEthiopianPhone, validateEthiopianPhone } from "../../services/validation";
 
 export default function RegisterScreen({ navigation }) {
   const { t } = useTranslation();
   const { register, login } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState("251");
+  const [phoneError, setPhoneError] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
@@ -21,6 +23,14 @@ export default function RegisterScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   
+  const handlePhoneChange = (value) => {
+    const normalized = normalizeEthiopianPhone(value);
+    setPhone(normalized);
+    if (phoneError) {
+      setPhoneError("");
+    }
+  };
+
   const roleOptions = [
     { label: t("register.roleCustomer"), value: "customer" },
     { label: t("register.roleLandlord"), value: "landlord" },
@@ -41,6 +51,12 @@ export default function RegisterScreen({ navigation }) {
     }
     if (password !== confirmPassword) {
       Alert.alert(t("register.validation.title"), t("register.validation.passwordMatch"));
+      return;
+    }
+    if (!validateEthiopianPhone(phone)) {
+      const errorMessage = t("register.validation.phoneInvalid");
+      setPhoneError(errorMessage);
+      Alert.alert(t("register.validation.title"), errorMessage);
       return;
     }
     setLoading(true);
@@ -128,9 +144,11 @@ export default function RegisterScreen({ navigation }) {
               placeholderTextColor={colors.placeholder}
               keyboardType="phone-pad"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={handlePhoneChange}
+              maxLength={12}
             />
           </View>
+          {phoneError ? <Text style={styles.errorText}>{phoneError}</Text> : null}
           <TouchableOpacity 
             style={[styles.inputContainer, { backgroundColor: colors.inputBackground }]}
             onPress={() => setShowRoleModal(true)}
@@ -364,5 +382,12 @@ const createStyles = (colors) => StyleSheet.create({
   roleOptionText: {
     fontSize: 16,
     flex: 1,
+  },
+  errorText: {
+    color: "#dc2626",
+    marginTop: -12,
+    marginBottom: 12,
+    marginLeft: 48,
+    fontSize: 13,
   },
 });

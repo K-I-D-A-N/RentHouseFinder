@@ -64,7 +64,8 @@
       "fillAll": "Please fill in all fields.",
       "selectRole": "Please select a role (Customer or Landlord).",
       "passwordLength": "Password must be at least 8 characters.",
-      "passwordMatch": "Passwords do not match"
+      "passwordMatch": "Passwords do not match",
+      "phoneInvalid": "Please enter a valid Ethiopian phone number in the format 2519XXXXXXXX."
     },
     "error": {
       "loginTitle": "Login Failed",
@@ -95,6 +96,16 @@
     "propertyType": "Property Type",
     "allTypes": "All Types",
     "propertiesFound": "{{count}} Properties Found",
+    "onePropertyFound": "1 property found",
+    "propertiesFoundForSearch": "{{count}} properties found for your search",
+    "propertiesFoundForSearchSuffix": " properties found for your search",
+    "noPropertiesTitle": "No properties found",
+    "noPropertiesSubtext": "Try adjusting your filters",
+    "resetFilters": "Reset Filters",
+    "showFilters": "Show Filters",
+    "hideFilters": "Hide Filters",
+    "loadMore": "Load more properties",
+    "loadingMore": "Loading more...",
     "noProperties": "No properties found matching your filters.",
     "propertyFallback": "Property",
     "month": "month"
@@ -155,6 +166,10 @@
     "datePlaceholder": "YYYY-MM-DD",
     "dateFormatError": "Date must be YYYY-MM-DD",
     "dateRangeError": "End date must be after start date",
+    "selectDate": "Select date",
+    "startDatePastError": "Start date cannot be in the past.",
+    "endDatePastError": "End date cannot be in the past.",
+    "endDateAfterStartError": "End date must be later than the start date.",
     "perDaySuffix": "/ day",
     "priceSummary": "Price summary",
     "totalDays": "Total days",

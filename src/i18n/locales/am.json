@@ -64,7 +64,8 @@
       "fillAll": "እባክዎ ሁሉንም ቦታዎች ይሙሉ።",
       "selectRole": "እባክዎ ሚና ይምረጡ (ደንበኛ ወይም የቤት ባለቤት)።",
       "passwordLength": "የሚስጥር ቁጥር ቢያንስ 8 ቁምፊዎች ሊኖረው ይገባል።",
-      "passwordMatch": "የሚስጥር ቁጥሮቹ አይዛመዱም"
+      "passwordMatch": "የሚስጥር ቁጥሮቹ አይዛመዱም",
+      "phoneInvalid": "እባክዎ በቅጥ 2519XXXXXXXX የታወቀ የኢትዮጵያ ስልክ ቁጥር ያስገቡ።"
     },
     "error": {
       "loginTitle": "መግባት አልተሳካም",
@@ -95,6 +96,16 @@
     "propertyType": "የቤት አይነት",
     "allTypes": "ሁሉም አይነቶች",
     "propertiesFound": "{{count}} ቤቶች ተገኝተዋል",
+    "onePropertyFound": "1 ቤት ተገኝተዋል",
+    "propertiesFoundForSearch": "ለፍለጋዎ {{count}} ቤቶች ተገኝተዋል",
+    "propertiesFoundForSearchSuffix": " ቤቶች ለፍለጋዎ ተገኝተዋል",
+    "noPropertiesTitle": "ቤቶች አልተገኙም",
+    "noPropertiesSubtext": "ማጣሪያዎችን ለማስተካከል ይሞክሩ",
+    "resetFilters": "ማጣሪያዎችን ዳግም አስጀምር",
+    "showFilters": "ማጣሪያዎችን አሳይ",
+    "hideFilters": "ማጣሪያዎችን ደብቅ",
+    "loadMore": "ተጨማሪ ቤቶች ጫን",
+    "loadingMore": "ተጨማሪ በመጫን ላይ...",
     "noProperties": "ለማጣሪያዎቹ የሚስማሙ ቤቶች አልተገኙም።",
     "propertyFallback": "ቤት",
     "month": "ወር"
@@ -155,6 +166,10 @@
     "datePlaceholder": "ዓዓዓዓ-ወወ-ቀቀ",
     "dateFormatError": "ቀን ዓዓዓዓ-ወወ-ቀቀ መሆን አለበት",
     "dateRangeError": "የማብቂያ ቀን ከጀምር ቀን በኋላ መሆን አለበት",
+    "selectDate": "ቀን ይምረጡ",
+    "startDatePastError": "የጀምር ቀን ወደ ድሮ እንዳይሆን ይረሳ",
+    "endDatePastError": "የማብቂያ ቀን ወደ ድሮ እንዳይሆን ይረሳ",
+    "endDateAfterStartError": "የማብቂያ ቀን ከጀምር ቀን በኋላ መሆን አለበት።",
     "perDaySuffix": "/ ቀን",
     "priceSummary": "የዋጋ ማጠቃለያ",
     "totalDays": "ጠቅላላ ቀናት",

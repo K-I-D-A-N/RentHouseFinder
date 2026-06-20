@@ -1,6 +1,6 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet } from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { MaterialIcons as Icon } from "@expo/vector-icons";
 
 export default function StarRating({ rating = 0, size = 28, onChange }) {
   const normalized = Math.max(0, Math.min(5, Math.round(rating || 0)));

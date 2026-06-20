@@ -11,8 +11,9 @@ import {
   Image,
   Platform,
 } from "react-native";
-import { useRoute, useFocusEffect } from "@react-navigation/native";
+import { useRoute, useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../../hooks/useTheme";
 import { initiatePayment, getPaymentByBooking, verifyPaymentByTxRef } from "../../api/paymentApi";
 import { getListingBySlug } from "../../api/listingApi";
@@ -70,6 +71,7 @@ const sectionStyles = StyleSheet.create({
 export default function PaymentScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const route = useRoute();
   const [loading, setLoading]                   = useState(true);
   const [error, setError]                       = useState(null);
@@ -277,12 +279,17 @@ export default function PaymentScreen() {
     <View style={styles.screen}>
       {/* ── Header bar ── */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.navBack} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color={colors.text || "#111827"} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>{t("payment.title")}</Text>
-        <View style={[styles.statusPill, { backgroundColor: statusCfg.bg }]}>
-          <View style={[styles.statusDot, { backgroundColor: statusCfg.dot }]} />
-          <Text style={[styles.statusPillText, { color: statusCfg.text }]}>
-            {statusCfg.label ? t(statusCfg.label) : booking.status || "—"}
-          </Text>
+        <View style={styles.headerRight}>
+          <View style={[styles.statusPill, { backgroundColor: statusCfg.bg }]}> 
+            <View style={[styles.statusDot, { backgroundColor: statusCfg.dot }]} />
+            <Text style={[styles.statusPillText, { color: statusCfg.text }]}> 
+              {statusCfg.label ? t(statusCfg.label) : booking.status || "—"}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -455,11 +462,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "#e5e7eb",
   },
+  navBack: {
+    padding: 8,
+  },
   headerTitle: {
     fontSize: 22,
     fontWeight: "900",
     color: "#111827",
     letterSpacing: -0.5,
+    flex: 1,
+    textAlign: "center",
+  },
+  headerRight: {
+    minWidth: 100,
+    alignItems: "flex-end",
   },
   statusPill: {
     flexDirection: "row",

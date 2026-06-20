@@ -1,9 +1,8 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { getMyBookings } from "../../api/bookingApi";
-import { useNavigation } from "@react-navigation/native";
 import useTheme from "../../hooks/useTheme";
 import ReviewModal from "../../components/ReviewModal";
 
@@ -56,7 +55,14 @@ export default function MyBookingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}> 
-      <Text style={[styles.title, { color: colors.text }]}>{t("myBookings.title")}</Text>
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Text style={[styles.backButtonText, { color: colors.text }]}>←</Text>
+          <Text style={[styles.backButtonText, { color: colors.text, marginLeft: 8 }]}>Back</Text>
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>{t("myBookings.title")}</Text>
+        <View style={styles.headerSpacer} />
+      </View>
       <FlatList
         data={bookings}
         keyExtractor={(item) => String(item.id)}
@@ -201,5 +207,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  headerSpacer: {
+    width: 56,
   },
 });

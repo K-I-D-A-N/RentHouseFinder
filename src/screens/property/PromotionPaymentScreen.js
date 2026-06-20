@@ -11,7 +11,8 @@ import {
   Linking,
   Platform,
 } from "react-native";
-import { useRoute, useFocusEffect } from "@react-navigation/native";
+import { useRoute, useFocusEffect, useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 import useTheme from "../../hooks/useTheme";
 import { getPropertyById, promoteListing } from "../../api/propertyApi";
 import { verifyPromotionByTxRef } from "../../api/paymentApi";
@@ -65,6 +66,7 @@ const savePromotionPayments = async (items) => {
 
 export default function PromotionPaymentScreen() {
   const route = useRoute();
+  const navigation = useNavigation();
   const { listing, listing_id } = route.params || {};
   const { colors } = useTheme();
 
@@ -342,12 +344,17 @@ export default function PromotionPaymentScreen() {
   // UI — identical to original, zero visual changes
   // ---------------------------------------------------------------------------
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}> 
+      <View style={[styles.header, { backgroundColor: colors.surface }]}> 
+        <TouchableOpacity style={styles.navBack} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Promotion Payment</Text>
-        <Text style={[styles.statusPillText, { color: colors.primary }]}>
-          {getStatusLabel(currentStatus)}
-        </Text>
+        <View style={styles.headerRight}> 
+          <Text style={[styles.statusPillText, { color: colors.primary }]}> 
+            {getStatusLabel(currentStatus)}
+          </Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -480,7 +487,9 @@ export default function PromotionPaymentScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#f8f9fb" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: Platform.OS === "ios" ? 56 : 24, paddingBottom: 16, backgroundColor: "#fff", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e5e7eb" },
-  headerTitle: { fontSize: 22, fontWeight: "900", color: "#111827", letterSpacing: -0.5 },
+  navBack: { padding: 8 },
+  headerTitle: { fontSize: 22, fontWeight: "900", color: "#111827", letterSpacing: -0.5, flex: 1, textAlign: "center" },
+  headerRight: { minWidth: 100, alignItems: "flex-end" },
   statusPillText: { fontSize: 13, fontWeight: "700", color: "#2563eb" },
   scroll: { padding: 16, paddingTop: 20 },
   section: { borderRadius: 20, padding: 20, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 2 },

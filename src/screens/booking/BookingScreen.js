@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Image,
-  TextInput,
+  Platform,
 } from "react-native";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from "react-i18next";
 import useTheme from "../../hooks/useTheme";
 import { createBooking } from "../../api/bookingApi";
@@ -32,10 +32,46 @@ const makeImageUri = (image) => {
   return String(image);
 };
 
-const parseInputDate = (value) => {
-  if (!value) return null;
-  const date = new Date(value);
-  return isNaN(date.getTime()) ? null : date;
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+const getMidnight = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const formatDisplayDate = (date) => {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const validateBookingDates = (startDate, endDate, t) => {
+  const today = getMidnight(new Date());
+  let startDateError = "";
+  let endDateError = "";
+  let dateRangeError = "";
+
+  if (startDate) {
+    const start = getMidnight(startDate);
+    if (start < today) startDateError = t("booking.startDatePastError");
+  }
+
+  if (endDate) {
+    const end = getMidnight(endDate);
+    if (end < today) endDateError = t("booking.endDatePastError");
+  }
+
+  if (startDate && endDate) {
+    const start = getMidnight(startDate);
+    const end = getMidnight(endDate);
+    if (end <= start) dateRangeError = t("booking.endDateAfterStartError");
+  }
+
+  return { startDateError, endDateError, dateRangeError };
 };
 
 export default function BookingScreen({ route, navigation }) {
@@ -48,11 +84,13 @@ export default function BookingScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [startInput, setStartInput] = useState("");
-  const [endInput, setEndInput] = useState("");
+  const [isStartPickerOpen, setStartPickerOpen] = useState(false);
+  const [isEndPickerOpen, setEndPickerOpen] = useState(false);
   const [totalDays, setTotalDays] = useState(0);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [dateError, setDateError] = useState("");
+  const [startDateError, setStartDateError] = useState("");
+  const [endDateError, setEndDateError] = useState("");
+  const [dateRangeError, setDateRangeError] = useState("");
 
   useEffect(() => {
     if (!listingId) return;
@@ -76,44 +114,41 @@ export default function BookingScreen({ route, navigation }) {
   const effectiveTitle = routeTitle || property?.title || property?.name || t("payment.property");
 
   useEffect(() => {
-    if (!startDate || !endDate) {
-      setTotalDays(0);
-      setTotalPrice(0);
-      setDateError("");
-      return;
+    const { startDateError: startErr, endDateError: endErr, dateRangeError: rangeErr } = validateBookingDates(
+      startDate,
+      endDate,
+      t
+    );
+
+    setStartDateError(startErr);
+    setEndDateError(endErr);
+    setDateRangeError(rangeErr);
+
+    if (startDate && endDate && !startErr && !endErr && !rangeErr) {
+      const diff = Math.ceil((getMidnight(endDate).getTime() - getMidnight(startDate).getTime()) / MS_PER_DAY);
+      if (diff > 0) {
+        setTotalDays(diff);
+        setTotalPrice(diff * effectivePricePerDay);
+        return;
+      }
     }
 
-    const diff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff <= 0) {
-      setTotalDays(0);
-      setTotalPrice(0);
-      setDateError(t("booking.dateRangeError"));
-      return;
-    }
-
-    setDateError("");
-    setTotalDays(diff);
-    setTotalPrice(diff * effectivePricePerDay);
-  }, [startDate, endDate, effectivePricePerDay]);
+    setTotalDays(0);
+    setTotalPrice(0);
+  }, [startDate, endDate, effectivePricePerDay, t]);
 
   const imageUri = getPrimaryImageUrl(property) || makeImageUri(routeImage) || "";
 
-  const setStartDateFromString = (value) => {
-    setStartInput(value);
-    setStartDate(parseInputDate(value));
-  };
-
-  const setEndDateFromString = (value) => {
-    setEndInput(value);
-    setEndDate(parseInputDate(value));
-  };
-
-  const startDateString = startDate ? formatDate(startDate) : startInput;
-  const endDateString = endDate ? formatDate(endDate) : endInput;
-  const startInputError = startInput && !startDate ? t("booking.dateFormatError") : "";
-  const endInputError = endInput && !endDate ? t("booking.dateFormatError") : "";
-
-  const canSubmit = Boolean(listingId && startDate && endDate && totalDays > 0 && !loading && !dateError);
+  const canSubmit = Boolean(
+    listingId &&
+      startDate &&
+      endDate &&
+      totalDays > 0 &&
+      !loading &&
+      !startDateError &&
+      !endDateError &&
+      !dateRangeError
+  );
 
   const handleBooking = async () => {
     if (!listingId) {
@@ -121,7 +156,13 @@ export default function BookingScreen({ route, navigation }) {
       return;
     }
 
-    if (!startDate || !endDate || totalDays <= 0) {
+    const { startDateError: startErr, endDateError: endErr, dateRangeError: rangeErr } =
+      validateBookingDates(startDate, endDate, t);
+
+    if (!startDate || !endDate || totalDays <= 0 || startErr || endErr || rangeErr) {
+      setStartDateError(startErr);
+      setEndDateError(endErr);
+      setDateRangeError(rangeErr);
       Alert.alert(t("booking.error.title"), t("booking.validation.invalidDates"));
       return;
     }
@@ -175,31 +216,63 @@ export default function BookingScreen({ route, navigation }) {
 
           <View style={[styles.dateInput, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}> 
             <Text style={[styles.inputLabel, { color: colors.text }]}>{t("booking.startDate")}</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder={t("booking.datePlaceholder")}
-              placeholderTextColor={colors.placeholder}
-              value={startInput}
-              onChangeText={setStartDateFromString}
-              keyboardType="numbers-and-punctuation"
-            />
-            {startInputError ? <Text style={styles.validationError}>{startInputError}</Text> : null}
+            <TouchableOpacity
+              style={[styles.dateButton, { borderColor: colors.border, backgroundColor: colors.inputBackground }]}
+              onPress={() => setStartPickerOpen(true)}
+            >
+              <Text style={[styles.dateButtonText, { color: startDate ? colors.text : colors.placeholder }]}> 
+                {startDate ? formatDisplayDate(startDate) : t("booking.selectDate")}
+              </Text>
+            </TouchableOpacity>
+            {startDateError ? <Text style={styles.validationError}>{startDateError}</Text> : null}
           </View>
 
           <View style={[styles.dateInput, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}> 
             <Text style={[styles.inputLabel, { color: colors.text }]}>{t("booking.endDate")}</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder={t("booking.datePlaceholder")}
-              placeholderTextColor={colors.placeholder}
-              value={endInput}
-              onChangeText={setEndDateFromString}
-              keyboardType="numbers-and-punctuation"
-            />
-            {endInputError ? <Text style={styles.validationError}>{endInputError}</Text> : null}
+            <TouchableOpacity
+              style={[styles.dateButton, { borderColor: colors.border, backgroundColor: colors.inputBackground }]}
+              onPress={() => setEndPickerOpen(true)}
+            >
+              <Text style={[styles.dateButtonText, { color: endDate ? colors.text : colors.placeholder }]}> 
+                {endDate ? formatDisplayDate(endDate) : t("booking.selectDate")}
+              </Text>
+            </TouchableOpacity>
+            {endDateError ? <Text style={styles.validationError}>{endDateError}</Text> : null}
           </View>
 
-          {dateError ? <Text style={styles.validationError}>{dateError}</Text> : null}
+          {dateRangeError ? <Text style={styles.validationError}>{dateRangeError}</Text> : null}
+
+          {isStartPickerOpen && (
+            <DateTimePicker
+              value={startDate || new Date()}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "calendar"}
+              minimumDate={new Date()}
+              onChange={(event, selectedDate) => {
+                setStartPickerOpen(false);
+                if (!selectedDate) return;
+                const chosen = new Date(selectedDate);
+                setStartDate(chosen);
+                if (endDate && getMidnight(chosen) >= getMidnight(endDate)) {
+                  setEndDate(null);
+                }
+              }}
+            />
+          )}
+
+          {isEndPickerOpen && (
+            <DateTimePicker
+              value={endDate || (startDate ? new Date(getMidnight(startDate).getTime() + MS_PER_DAY) : new Date())}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "calendar"}
+              minimumDate={startDate ? new Date(getMidnight(startDate).getTime() + MS_PER_DAY) : new Date()}
+              onChange={(event, selectedDate) => {
+                setEndPickerOpen(false);
+                if (!selectedDate) return;
+                setEndDate(new Date(selectedDate));
+              }}
+            />
+          )}
         </View>
 
         <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
@@ -306,6 +379,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 8,
   },
+  dateButton: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    justifyContent: "center",
+  },
+  dateButtonText: {
+    fontSize: 16,
+  },
   dateText: {
     fontSize: 16,
   },
@@ -349,5 +432,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: "center",
   },
 });

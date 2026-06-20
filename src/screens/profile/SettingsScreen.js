@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert, Linking, Platform, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { useTranslation } from "react-i18next";
 import { saveLanguage } from "../../i18n/i18n";
@@ -7,7 +8,7 @@ import useTheme from "../../hooks/useTheme";
 import useAuth from "../../hooks/useAuth";
 import { deleteCurrentUser } from "../../api/userApi";
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ navigation }) {
   const { t, i18n } = useTranslation();
   const { colors, isDarkMode, toggleDarkMode } = useTheme();
   const { logout } = useAuth();
@@ -119,6 +120,12 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+          <Text style={[styles.backButtonText, { color: colors.text }]}>Back</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={[styles.title, { color: colors.text }]}>{t("settings.title")}</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t("settings.subtitle")}</Text>
 
@@ -295,5 +302,20 @@ const createStyles = (colors) => StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.65,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 24,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

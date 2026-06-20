@@ -13,7 +13,7 @@ import {
   Alert,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { MaterialIcons as Icon } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import useTheme from "../../hooks/useTheme";
 import useAuth from "../../hooks/useAuth";
@@ -304,7 +304,9 @@ export default function PropertyDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.ownerDetails}>
               <Text style={[styles.ownerName, { color: colors.text }]}>{ownerName}</Text>
-              <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>{t("propertyDetail.email")}: {ownerEmail}</Text>
+                {role?.toLowerCase() !== "customer" && ownerEmail ? (
+                  <Text style={[styles.ownerPhone, { color: colors.textSecondary }]}>{t("propertyDetail.email")}: {ownerEmail}</Text>
+                ) : null}
             </View>
           </View>
         </View>
@@ -315,7 +317,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
             {reviewStats ? (
               <View style={styles.statsRow}>
                 <Text style={[styles.avgText, { color: colors.text }]}>{Number(reviewStats.average || reviewStats.avg || 0).toFixed(1)}</Text>
-                <View style={{ marginLeft: 8 }}>{renderStars(Math.round(reviewStats.average || reviewStats.avg || 0))}</View>
+                <View style={{ marginLeft: 8, flexDirection: "row", alignItems: "center" }}>{renderStars(Math.round(reviewStats.average || reviewStats.avg || 0))}</View>
                 <Text style={[styles.countText, { color: colors.textSecondary }]}>{t("propertyDetail.reviewsCount", { count: reviewStats.count ?? reviewStats.total ?? reviews.length })}</Text>
               </View>
             ) : (
@@ -509,7 +511,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   starIcon: {
-    marginLeft: 2,
+    marginRight: 4,
   },
   reviewComment: {
     fontSize: 14,
