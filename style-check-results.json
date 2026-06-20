@@ -1,0 +1,15 @@
+[
+  {
+    "file": "tmp_find_styles_bug.js",
+    "lines": [
+      {
+        "n": 13,
+        "t": "      if (!text.includes('styles.')) continue;\r"
+      },
+      {
+        "n": 17,
+        "t": "        const styleLines = lines.map((line, idx) => ({ line: idx + 1, text: line })).filter(l => l.text.includes('styles.'));\r"
+      }
+    ]
+  }
+]

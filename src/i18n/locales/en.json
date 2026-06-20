@@ -1,0 +1,562 @@
+{
+  "splash": {
+    "appName": "RentHouse",
+    "tagline": "Discover the best rental homes in Addis Ababa with confidence."
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "slides": [
+      {
+        "title": "Find Houses Easily",
+        "description": "Search through thousands of properties in Addis Ababa with our smart search."
+      },
+      {
+        "title": "Filter by Your Needs",
+        "description": "Filter properties by price, location, number of rooms, and more."
+      },
+      {
+        "title": "Post Your Property",
+        "description": "List your house for rent or sale and reach thousands of potential buyers."
+      }
+    ],
+    "finalSlide": {
+      "title": "Ready to continue",
+      "description": "Swipe once more to login and begin your search."
+    }
+  },
+  "common": {
+    "unknown": "Unknown"
+  },
+  "login": {
+    "appName": "Rent House Finder",
+    "subtitle": "Find your perfect home in Addis Ababa",
+    "title": "Welcome Back",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "button": "Login",
+    "noAccount": "Don't have an account?",
+    "register": "Register",
+    "validation": {
+      "title": "Validation",
+      "message": "Please enter both email and password."
+    },
+    "error": {
+      "title": "Login Failed"
+    }
+  },
+  "register": {
+    "title": "Create Account",
+    "subtitle": "Join Rent House Finder today",
+    "fullNamePlaceholder": "Full Name",
+    "emailPlaceholder": "Email",
+    "phonePlaceholder": "Phone Number",
+    "passwordPlaceholder": "Password",
+    "confirmPasswordPlaceholder": "Confirm Password",
+    "selectRole": "Select Role",
+    "roleCustomer": "Customer",
+    "roleLandlord": "Landlord",
+    "selectRoleTitle": "Select Role",
+    "closeButton": "Close",
+    "button": "Create Account",
+    "hasAccount": "Already have an account?",
+    "login": "Login",
+    "validation": {
+      "fillAll": "Please fill in all fields.",
+      "selectRole": "Please select a role (Customer or Landlord).",
+      "passwordLength": "Password must be at least 8 characters.",
+      "passwordMatch": "Passwords do not match",
+      "phoneInvalid": "Please enter a valid Ethiopian phone number in the format 2519XXXXXXXX."
+    },
+    "error": {
+      "loginTitle": "Login Failed",
+      "registerTitle": "Registration Failed"
+    }
+  },
+  "home": {
+    "heading": "Find Your Home",
+    "subheading": "Search the best rentals in Addis Ababa",
+    "searchPlaceholder": "Search by location...",
+    "allCategories": "All",
+    "noListings": "No listings found for this category.",
+    "noProperties": "No properties found.",
+    "viewDetails": "View Details",
+    "priceUnavailable": "Price unavailable",
+    "month": "month",
+    "week": "week",
+    "day": "day"
+  },
+  "search": {
+    "title": "Search & Filter",
+    "subtitle": "Find the best rental with filters.",
+    "priceRange": "Price Range",
+    "minPrice": "Min Price",
+    "maxPrice": "Max Price",
+    "location": "Location",
+    "locationPlaceholder": "Enter location",
+    "propertyType": "Property Type",
+    "allTypes": "All Types",
+    "propertiesFound": "{{count}} Properties Found",
+    "onePropertyFound": "1 property found",
+    "propertiesFoundForSearch": "{{count}} properties found for your search",
+    "propertiesFoundForSearchSuffix": " properties found for your search",
+    "noPropertiesTitle": "No properties found",
+    "noPropertiesSubtext": "Try adjusting your filters",
+    "resetFilters": "Reset Filters",
+    "showFilters": "Show Filters",
+    "hideFilters": "Hide Filters",
+    "loadMore": "Load more properties",
+    "loadingMore": "Loading more...",
+    "noProperties": "No properties found matching your filters.",
+    "propertyFallback": "Property",
+    "month": "month"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "subtitle": "{{count}} saved properties",
+    "empty": "No saved properties yet.",
+    "loading": "Loading favorites...",
+    "month": "month",
+    "week": "week",
+    "day": "day"
+  },
+  "propertyDetail": {
+    "description": "Description",
+    "readMore": "Read more",
+    "readLess": "Read less",
+    "owner": "Owner",
+    "phone": "Phone",
+    "email": "Email",
+    "reviews": "Reviews",
+    "noReviews": "No reviews yet",
+    "bookNow": "Book Now",
+    "rented": "Rented",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "titleFallback": "Beautiful rental property",
+    "bookingFallback": "Booking",
+    "categoryUnknown": "General",
+    "perDaySuffix": "/ day",
+    "perMonthSuffix": "/ month",
+    "guest": "Guest",
+    "noComment": "No comment provided.",
+    "reviewsCount": "{{count}} review",
+    "reviewsCount_plural": "{{count}} reviews",
+    "viewsCount": "{{count}} view",
+    "viewsCount_plural": "{{count}} views",
+    "landlordNotice": "Landlords cannot book properties.",
+    "alreadyRented": "This property is already rented.",
+    "rentedAlert": {
+      "title": "Already Rented",
+      "message": "This house is already rented."
+    },
+    "checking": "Checking…",
+    "views": "views",
+    "priceUnavailable": "Price unavailable",
+    "locationUnavailable": "Location unavailable",
+    "noDescription": "No description available.",
+    "error": "Unable to load the property details. Please check your connection and try again.",
+    "unavailableDetails": "Property details unavailable.",
+    "premiumLocked": "Premium Content Locked",
+    "premiumLockedMessage": "This listing is available to premium members only. Upgrade your account to view full details, contact the owner, and book this property.",
+    "upgradeToPremium": "Upgrade to Premium",
+    "upgradeAlertTitle": "Upgrade to Premium",
+    "upgradeAlertMessage": "Contact support or visit your profile to upgrade to a premium membership and unlock exclusive listings."
+  },
+  "booking": {
+    "title": "Confirm booking",
+    "loadingDetails": "Loading listing details…",
+    "bookingDates": "Booking dates",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "datePlaceholder": "YYYY-MM-DD",
+    "dateFormatError": "Date must be YYYY-MM-DD",
+    "dateRangeError": "End date must be after start date",
+    "selectDate": "Select date",
+    "startDatePastError": "Start date cannot be in the past.",
+    "endDatePastError": "End date cannot be in the past.",
+    "endDateAfterStartError": "End date must be later than the start date.",
+    "perDaySuffix": "/ day",
+    "priceSummary": "Price summary",
+    "totalDays": "Total days",
+    "pricePerDay": "Price per day",
+    "totalPrice": "Total price",
+    "bookNow": "Book Now",
+    "invalidRequest": "Invalid booking request. Please select a property from the list.",
+    "validation": {
+      "missingId": "Listing ID is missing. Please select a property again.",
+      "invalidDates": "Please choose valid booking dates."
+    },
+    "success": {
+      "title": "Success",
+      "message": "Your booking is pending approval",
+      "ok": "OK"
+    },
+    "error": {
+      "title": "Error"
+    }
+  },
+  "myBookings": {
+    "title": "My Bookings",
+    "empty": "No bookings yet.",
+    "statusUnavailable": "Status unavailable",
+    "dateUnavailable": "Date unavailable",
+    "propertyDeleted": "Property deleted by owner",
+    "removedListing": "This booking is associated with a removed listing.",
+    "payNow": "Pay Now",
+    "writeReview": "Write Review"
+  },
+  "payment": {
+    "title": "Payment",
+    "loading": "Loading payment details…",
+    "noData": "No booking or listing data found.",
+    "property": "Property",
+    "landlord": "Landlord",
+    "bookingDetails": "Booking Details",
+    "bookingId": "Booking ID",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "duration": "Duration",
+    "day": "day",
+    "days": "days",
+    "bookingStatus": "Booking Status",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "completed": "Completed",
+      "paid": "Paid"
+    },
+    "paymentSummary": "Payment Summary",
+    "rentalCost": "Rental Cost",
+    "securityDeposit": "Security Deposit",
+    "platformFee": "Platform Fee",
+    "totalDue": "Total Due",
+    "paymentMethod": "Payment Method",
+    "chapaTitle": "Chapa",
+    "chapaSub": "Secure Ethiopian payment gateway",
+    "secure": "Secure",
+    "protection": "Your payment is held securely by BetRent until check-in is confirmed.",
+    "pendingBanner": "Waiting for landlord approval",
+    "rejectedBanner": "Booking rejected by the landlord",
+    "successBanner": "Payment successful — enjoy your stay!",
+    "approvedBanner": "Booking approved — complete payment to confirm your stay.",
+    "continueButton": "Continue to Chapa Payment",
+    "continueSubtitle": "You will be redirected securely",
+    "refreshButton": "↻  Refresh Payment Status",
+    "verifyAlert": {
+      "noRef": "Unable to verify",
+      "noRefMessage": "No payment transaction reference is available yet.",
+      "verified": "Payment Verified ✓",
+      "verifiedMessage": "Your payment is now complete.",
+      "statusTitle": "Payment Status",
+      "statusMessage": "Current status: {{status}}",
+      "unknown": "unknown",
+      "errorTitle": "Verification Error"
+    },
+    "payAlert": {
+      "continueTitle": "Continue Payment",
+      "continueMessage": "Complete your payment in the opened window. After payment, return to this app.",
+      "completeTitle": "Payment Complete",
+      "completeMessage": "Your payment is already marked complete.",
+      "failedTitle": "Payment Failed"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "noName": "No name available",
+    "noEmail": "No email available",
+    "noPhone": "No phone available",
+    "myListings": "My Listings",
+    "myListingsSubtitle": "Manage your properties",
+    "myBookings": "My Bookings",
+    "myBookingsSubtitle": "View your rented properties",
+    "settings": "Settings",
+    "settingsSubtitle": "App preferences",
+    "logout": "Logout",
+    "logoutSubtitle": "Sign out of your account",
+    "ctaTitle": "Want to list your property?",
+    "ctaSubtitle": "Reach thousands of potential buyers and renters",
+    "postProperty": "Post Property",
+    "landlordOnly": {
+      "title": "Register as Landlord",
+      "message": "To post properties, please register as a landlord first.",
+      "ok": "OK"
+    },
+    "permission": {
+      "camera": "Camera permission is required.",
+      "gallery": "Gallery permission is required.",
+      "title": "Permission"
+    },
+    "imageSource": {
+      "title": "Choose Image Source",
+      "message": "Select where to upload your profile picture from",
+      "camera": "Camera",
+      "gallery": "Gallery",
+      "cancel": "Cancel"
+    },
+    "uploadSuccess": {
+      "title": "Success",
+      "message": "Profile image updated."
+    },
+    "uploadFailed": "Upload Failed"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your preferences and app experience.",
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Receive booking and new listing alerts.",
+      "allowed": "Allowed",
+      "denied": "Denied",
+      "checking": "Checking permissions...",
+      "status": "Status",
+      "deniedAlert": {
+        "title": "Notifications denied",
+        "message": "Please allow notifications in your device settings.",
+        "cancel": "Cancel",
+        "openSettings": "Open Settings"
+      },
+      "requestError": "Unable to request notification permission.",
+      "disabledAlert": {
+        "title": "Notifications disabled",
+        "ios": "You can re-enable notifications from the device settings.",
+        "android": "Disable notifications from app settings if you want to stop alerts."
+      }
+    },
+    "darkMode": {
+      "title": "Dark Mode",
+      "subtitle": "Switch the app theme to dark mode.",
+      "enable": "Enable dark theme"
+    },
+    "language": {
+      "title": "Language",
+      "subtitle": "Current selection",
+      "english": "English",
+      "amharic": "Amharic"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "dangerZone": "DANGER ZONE",
+      "description": "Permanently deactivate your account and remove access to all your data, bookings, and listings. This action cannot be undone.",
+      "button": "🗑  Delete My Account",
+      "confirm1": {
+        "title": "Delete Account",
+        "message": "Are you sure you want to delete your account? This action cannot be undone.",
+        "cancel": "Cancel",
+        "continue": "Continue"
+      },
+      "confirm2": {
+        "title": "Final Confirmation",
+        "message": "Your account and all associated data will be permanently deactivated. Do you want to proceed?",
+        "back": "Go Back",
+        "delete": "Delete My Account"
+      },
+      "error": "Error"
+    }
+  },
+  "addProperty": {
+    "title": "Post Property",
+    "uploadImages": "Upload Images",
+    "imagesAdded": "{{count}} image added",
+    "imagesAddedPlural": "{{count}} images added",
+    "propertyTitle": "Property Title",
+    "titlePlaceholder": "e.g., Modern 3 Bedroom Apartment",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe your property in detail...",
+    "category": "Category",
+    "selectCategory": "Select Category",
+    "selectCategoryTitle": "Select Category",
+    "priceDay": "Price/Day (ETB)",
+    "priceWeek": "Price/Week (ETB)",
+    "priceMonth": "Price/Month (ETB)",
+    "deposit": "Deposit Amount (ETB)",
+    "condition": "Property Condition",
+    "selectCondition": "Select Condition",
+    "selectConditionTitle": "Select Condition",
+    "city": "City",
+    "address": "Address",
+    "submit": "Post Property",
+    "close": "Close",
+    "noCategories": "No categories available",
+    "conditions": {
+      "new": "New",
+      "like_new": "Like New",
+      "good": "Good",
+      "fair": "Fair"
+    },
+    "imageSource": {
+      "title": "Add Property Images",
+      "message": "Choose where to upload images from",
+      "camera": "Camera",
+      "gallery": "Gallery",
+      "cancel": "Cancel"
+    },
+    "permission": {
+      "camera": "Camera permission is required.",
+      "gallery": "Gallery permission is required.",
+      "title": "Permission"
+    },
+    "validation": {
+      "title": "Validation",
+      "noTitle": "Please enter a property title.",
+      "noDescription": "Please enter a property description.",
+      "noPrice": "Please enter at least one price (daily, weekly, or monthly).",
+      "noDeposit": "Please enter a deposit amount.",
+      "noCondition": "Please select a valid property condition.",
+      "noCity": "Please enter a city.",
+      "noAddress": "Please enter an address.",
+      "noCategory": "Please select a property category.",
+      "noPremiumQuota": "You have no remaining premium posts. Choose a normal listing or upgrade your plan.",
+      "noPostQuota": "You have no remaining posts. Upgrade your plan to post more listings."
+    },
+    "success": {
+      "title": "Success",
+      "message": "Property posted successfully!"
+    },
+    "error": {
+      "title": "Submission Failed",
+      "loadCategories": "Failed to load property categories.",
+      "pickImage": "Failed to pick image.",
+      "pickImageTitle": "Error"
+    },
+    "landlordOnly": {
+      "title": "Landlord Only",
+      "message": "Only landlord accounts can create and manage property listings."
+    },
+    "listingType": "Listing Type",
+    "selectListingType": "Select listing type",
+    "selectListingTypeTitle": "Select Listing Type",
+    "listingTypes": {
+      "normal": "Normal Listing",
+      "premium": "Premium Listing"
+    },
+    "usageTitle": "Your Plan Usage",
+    "usage": {
+      "postsUsed": "Posts Used",
+      "remainingPosts": "Remaining Posts",
+      "premiumPostsUsed": "Premium Posts Used",
+      "remainingPremiumPosts": "Remaining Premium Posts",
+      "approvalsUsed": "Approvals Used",
+      "remainingApprovals": "Remaining Approvals"
+    }
+  },
+  "editListing": {
+    "title": "Edit Listing",
+    "titleLabel": "Title",
+    "description": "Description",
+    "price": "Price",
+    "city": "City",
+    "category": "Category",
+    "condition": "Condition",
+    "saveButton": "Save Changes",
+    "conditions": {
+      "new": "New",
+      "like_new": "Like New",
+      "good": "Good",
+      "fair": "Fair"
+    },
+    "validation": {
+      "title": "Validation",
+      "message": "Please fill all required fields.",
+      "invalidCondition": "Please select a valid property condition."
+    },
+    "success": {
+      "title": "Success",
+      "message": "Listing updated successfully!",
+      "ok": "OK"
+    },
+    "error": {
+      "title": "Error",
+      "loadCategories": "Failed to load categories",
+      "fetchListing": "Failed to fetch listing details",
+      "updateFailed": "Failed to update listing."
+    }
+  },
+  "editProperty": {
+    "title": "Edit Listing",
+    "titleLabel": "Title *",
+    "description": "Description",
+    "price": "Price (ETB) *",
+    "propertyType": "Property Type",
+    "location": "Location *",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "squareFeet": "Square Feet",
+    "verified": "Verified",
+    "updateButton": "Update Listing",
+    "updating": "Updating...",
+    "placeholders": {
+      "title": "Enter property title",
+      "description": "Enter property description",
+      "price": "Enter price",
+      "propertyType": "e.g., Apartment",
+      "location": "Enter location",
+      "number": "Number",
+      "squareFeet": "Enter square feet"
+    },
+    "validation": {
+      "title": "Validation Error",
+      "noTitle": "Please enter a property title.",
+      "noPrice": "Please enter a price.",
+      "noLocation": "Please enter a location."
+    },
+    "success": {
+      "title": "Success",
+      "message": "Property updated successfully."
+    },
+    "error": {
+      "title": "Error",
+      "loadFailed": "Failed to load property details.",
+      "updateFailed": "Failed to update property."
+    }
+  },
+  "myListings": {
+    "title": "My Listings",
+    "tabListings": "My Listings",
+    "tabRequests": "Requests",
+    "errorTitle": "Error",
+    "emptyListings": {
+      "title": "No Listings Yet",
+      "description": "You haven't posted any properties yet. Start by creating your first listing!",
+      "button": "Create Listing"
+    },
+    "emptyRequests": {
+      "title": "No Requests",
+      "description": "No booking requests yet."
+    },
+    "delete": {
+      "title": "Delete Listing",
+      "message": "Are you sure you want to delete \"{{title}}\"?",
+      "cancel": "Cancel",
+      "confirm": "Delete",
+      "success": "Property deleted successfully",
+      "error": "Failed to delete listing. Please try again.",
+      "successTitle": "Success",
+      "errorTitle": "Error"
+    },
+    "approve": {
+      "success": "Booking approved.",
+      "successTitle": "Success",
+      "error": "Failed to update booking status. Please try again.",
+      "errorTitle": "Error"
+    },
+    "reject": {
+      "success": "Booking rejected.",
+      "successTitle": "Success"
+    },
+    "request": {
+      "unknown": "Unknown renter",
+      "total": "Total",
+      "pending": "PENDING",
+      "approved": "APPROVED",
+      "rejected": "REJECTED",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "verified": "Verified",
+    "priceUnavailable": "Price unavailable",
+    "month": "month",
+    "week": "week",
+    "day": "day"
+  }
+}
